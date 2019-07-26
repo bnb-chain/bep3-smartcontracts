@@ -100,14 +100,14 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         const timelock = 1000;
         const receiverAddr = swapB;
         const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
-        const outAmount = 100000000;
-        const inAmount = 100000000;
+        const erc20Amount = 100000000;
+        const bep2Amount = 100000000;
 
         var initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
         assert.equal(initializable, true);
 
-        await bnbInstance.approve(AtomicSwapper.address, outAmount, { from: swapA });
-        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+        await bnbInstance.approve(AtomicSwapper.address, erc20Amount, { from: swapA });
+        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInitialization event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'SwapInitialization', (ev) => {
             return ev._msgSender === swapA &&
@@ -116,8 +116,8 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
                 Number(ev._index.toString()) === 0 &&
                 ev._secretHashLock === secretHashLock &&
                 Number(ev._timestamp.toString()) === timestamp &&
-                Number(ev._outAmount.toString()) === outAmount &&
-                Number(ev._inAmount.toString()) === inAmount;
+                Number(ev._erc20Amount.toString()) === erc20Amount &&
+                Number(ev._bep2Amount.toString()) === bep2Amount;
         });
 
         //Verify swap index
@@ -126,14 +126,14 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
 
         // Verify if the swapped ERC20 token has been transferred to contract address
         var balanceOfSwapContract = await bnbInstance.balanceOf.call(AtomicSwapper.address);
-        assert.equal(Number(balanceOfSwapContract.toString()), outAmount);
+        assert.equal(Number(balanceOfSwapContract.toString()), erc20Amount);
 
         // querySwapByHashLock
         var swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
         assert.equal(timestamp, swap._timestamp);
         assert.equal(0x0, swap._secretKey);
-        assert.equal(outAmount, swap._outAmount);
-        assert.equal(inAmount, swap._inAmount);
+        assert.equal(erc20Amount, swap._erc20Amount);
+        assert.equal(bep2Amount, swap._bep2Amount);
         assert.equal(swapA, swap._sender);
         assert.equal(BEP2Addr, swap._BEP2Addr);
         // swap status should be OPEN 1
@@ -143,8 +143,8 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(secretHashLock, swap._secretHashLock);
         assert.equal(timestamp, swap._timestamp);
         assert.equal(0x0, swap._secretKey);
-        assert.equal(outAmount, swap._outAmount);
-        assert.equal(inAmount, swap._inAmount);
+        assert.equal(erc20Amount, swap._erc20Amount);
+        assert.equal(bep2Amount, swap._bep2Amount);
         assert.equal(swapA, swap._sender);
         assert.equal(BEP2Addr, swap._BEP2Addr);
         assert.equal(1, swap._status);
@@ -172,7 +172,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(secretKey, swap._secretKey);
 
         balanceOfSwapB = await bnbInstance.balanceOf.call(swapB);
-        assert.equal(Number(balanceOfSwapB.toString()), outAmount);
+        assert.equal(Number(balanceOfSwapB.toString()), erc20Amount);
 
         balanceOfSwapContract = await bnbInstance.balanceOf.call(AtomicSwapper.address);
         assert.equal(Number(balanceOfSwapContract.toString()), 0);
@@ -195,14 +195,14 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         const timelock = 100;
         const receiverAddr = swapB;
         const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
-        const outAmount = 100000000;
-        const inAmount = 100000000;
+        const erc20Amount = 100000000;
+        const bep2Amount = 100000000;
 
         var initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
         assert.equal(initializable, true);
 
-        await bnbInstance.approve(AtomicSwapper.address, outAmount, { from: swapA });
-        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+        await bnbInstance.approve(AtomicSwapper.address, erc20Amount, { from: swapA });
+        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInitialization event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'SwapInitialization', (ev) => {
             return ev._msgSender === swapA &&
@@ -211,8 +211,8 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
                 Number(ev._index.toString()) === 1 &&
                 ev._secretHashLock === secretHashLock &&
                 Number(ev._timestamp.toString()) === timestamp &&
-                Number(ev._outAmount.toString()) === outAmount &&
-                Number(ev._inAmount.toString()) === inAmount;
+                Number(ev._erc20Amount.toString()) === erc20Amount &&
+                Number(ev._bep2Amount.toString()) === bep2Amount;
         });
 
         const index = await swapInstance.index.call();
@@ -256,7 +256,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(Number(balanceOfSwapB.toString()), 0);
 
         var balanceOfSwapANew = await bnbInstance.balanceOf.call(swapA);
-        assert.equal(Number(balanceOfSwapANew.toString()), Number(balanceOfSwapA.toString()) + outAmount);
+        assert.equal(Number(balanceOfSwapANew.toString()), Number(balanceOfSwapA.toString()) + erc20Amount);
 
         var balanceOfSwapContract = await bnbInstance.balanceOf.call(AtomicSwapper.address);
         assert.equal(Number(balanceOfSwapContract.toString()), 0);
