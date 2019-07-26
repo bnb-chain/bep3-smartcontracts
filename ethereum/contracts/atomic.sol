@@ -17,7 +17,7 @@ contract AtomicSwapper {
 
         uint256 expireHeight;
         bytes32 secretKey;
-        uint256 timestamp;
+        uint64  timestamp;
 
         address sender;
         address receiverAddr;
@@ -32,7 +32,7 @@ contract AtomicSwapper {
     }
 
     // Events
-    event SwapInitialization(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint256 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
+    event SwapInitialization(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
     event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
     event SwapCompletion(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
 
@@ -93,13 +93,13 @@ contract AtomicSwapper {
     /// @param _bep2Amount BEP2 asset to swap in.
     function initiate(
         bytes32 _secretHashLock,
-        uint256 _timestamp,
+        uint64  _timestamp,
         uint256 _timelock,
         address _receiverAddr,
         bytes20 _BEP2Addr,
         uint256 _erc20Amount,
         uint256 _bep2Amount
-    ) external onlyInvalidSwaps(_secretHashLock) {
+    ) external onlyInvalidSwaps(_secretHashLock) returns (bool) {
         // Assume average block time interval is 10 second
         // The timelock period should be more than 10 minutes and less than one week
         require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
@@ -126,13 +126,14 @@ contract AtomicSwapper {
 
         // Emit initialization event
         emit SwapInitialization(msg.sender, _receiverAddr, _BEP2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, _erc20Amount, _bep2Amount);
+        return true;
     }
 
     /// @notice Claims an atomic swap.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
     /// @param _secretKey The secret of the atomic swap.
-    function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyBeforeExpireHeight(_secretHashLock) onlyOpenSwaps(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) {
+    function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyBeforeExpireHeight(_secretHashLock) onlyOpenSwaps(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
         // Complete the swap.
         swaps[_secretHashLock].secretKey = _secretKey;
         swapStates[_secretHashLock] = States.COMPLETED;
@@ -142,12 +143,14 @@ contract AtomicSwapper {
 
         // Emit completion event
         emit SwapCompletion(msg.sender, swaps[_secretHashLock].receiverAddr, _secretHashLock, _secretKey);
+
+        return true;
     }
 
     /// @notice Refunds an atomic swap.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function refund(bytes32 _secretHashLock) external onlyOpenSwaps(_secretHashLock) onlyAfterExpireHeight(_secretHashLock) {
+    function refund(bytes32 _secretHashLock) external onlyOpenSwaps(_secretHashLock) onlyAfterExpireHeight(_secretHashLock) returns (bool) {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
@@ -156,12 +159,14 @@ contract AtomicSwapper {
 
         // Emit expire event
         emit SwapExpire(msg.sender, swaps[_secretHashLock].sender, _secretHashLock);
+
+        return true;
     }
 
     /// @notice query an atomic swap by secretHashLock
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint256 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
+    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
         Swap memory swap = swaps[_secretHashLock];
         States status = swapStates[_secretHashLock];
         return (
@@ -180,7 +185,7 @@ contract AtomicSwapper {
     /// @notice query an atomic swap by swap index
     ///
     /// @param _index The swap index
-    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint256 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
+    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
         bytes32 secretHashLock = indexToSecretHashLock[_index];
         Swap memory swap = swaps[secretHashLock];
         States status = swapStates[secretHashLock];
@@ -224,7 +229,7 @@ contract AtomicSwapper {
     ///
     /// @param _secretKey The secret.
     /// @param _timestamp The timestamp.
-    function calSecretHash(bytes32 _secretKey, uint256 _timestamp) public pure returns (bytes32) {
+    function calSecretHash(bytes32 _secretKey, uint64 _timestamp) public pure returns (bytes32) {
         return sha256(abi.encodePacked(_secretKey, _timestamp));
     }
 }
