@@ -1,26 +1,17 @@
 pragma solidity ^0.5.8;
 
-interface ERC20 {
-    function totalSupply() external view returns (uint);
-    function balanceOf(address who) external view returns (uint);
-    function transfer(address to, uint value) external returns (bool);
-    function allowance(address owner, address spender) external view returns (uint);
-    function transferFrom(address from, address to, uint value) external returns (bool);
-    function approve(address spender, uint value) external returns (bool);
-}
-
-contract AtomicSwapper {
+contract ETHAtomicSwapper {
 
     struct Swap {
-        uint256 erc20Amount;
+        uint256 ETHCoin;
         uint256 bep2Amount;
 
         uint256 expireHeight;
         bytes32 secretKey;
         uint64  timestamp;
 
-        address sender;
-        address receiverAddr;
+        address payable sender;
+        address payable receiverAddr;
         bytes20 BEP2Addr;
     }
 
@@ -32,7 +23,7 @@ contract AtomicSwapper {
     }
 
     // Events
-    event SwapInitialization(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
+    event SwapInitialization(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount);
     event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
     event SwapCompletion(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
 
@@ -41,7 +32,6 @@ contract AtomicSwapper {
     mapping (bytes32 => States) private swapStates;
     mapping (uint256 => bytes32) private indexToSecretHashLock;
 
-    address public ERC20ContractAddr;
     uint256 public index;
 
     /// @notice Throws if the swap is not invalid (i.e. has already been used)
@@ -76,9 +66,7 @@ contract AtomicSwapper {
         _;
     }
 
-    /// @param _erc20Contract The ERC20 contract address
-    constructor(address _erc20Contract) public {
-        ERC20ContractAddr = _erc20Contract;
+    constructor() public {
         index = 0;
     }
 
@@ -89,26 +77,22 @@ contract AtomicSwapper {
     /// @param _timelock The number of blocks to wait before the asset can be returned to sender
     /// @param _receiverAddr The ethereum address of the swap counterpart.
     /// @param _BEP2Addr The receiver address on Binance Chain
-    /// @param _erc20Amount ERC20 asset to swap out.
     /// @param _bep2Amount BEP2 asset to swap in.
     function initiate(
         bytes32 _secretHashLock,
         uint64  _timestamp,
         uint256 _timelock,
-        address _receiverAddr,
+        address payable _receiverAddr,
         bytes20 _BEP2Addr,
-        uint256 _erc20Amount,
         uint256 _bep2Amount
-    ) external onlyInvalidSwaps(_secretHashLock) returns (bool) {
+    ) external onlyInvalidSwaps(_secretHashLock) payable returns (bool) {
         // Assume average block time interval is 10 second
         // The timelock period should be more than 10 minutes and less than one week
         require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
         require(_receiverAddr != address(0), "_receiverAddr should not be zero");
-        // Transfer ERC20 token to the swap contract
-        require(ERC20(ERC20ContractAddr).transferFrom(msg.sender, address(this), _erc20Amount), "failed to transfer client asset to swap contract address");
         // Store the details of the swap.
         Swap memory swap = Swap({
-            erc20Amount: _erc20Amount,
+            ETHCoin: msg.value,
             bep2Amount: _bep2Amount,
             expireHeight: _timelock + block.number,
             secretKey: 0x0,
@@ -125,7 +109,7 @@ contract AtomicSwapper {
         index = index + 1;
 
         // Emit initialization event
-        emit SwapInitialization(msg.sender, _receiverAddr, _BEP2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, _erc20Amount, _bep2Amount);
+        emit SwapInitialization(msg.sender, _receiverAddr, _BEP2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, msg.value, _bep2Amount);
         return true;
     }
 
@@ -138,8 +122,8 @@ contract AtomicSwapper {
         swaps[_secretHashLock].secretKey = _secretKey;
         swapStates[_secretHashLock] = States.COMPLETED;
 
-        // Pay erc20 token to receiver
-        require(ERC20(ERC20ContractAddr).transfer(swaps[_secretHashLock].receiverAddr, swaps[_secretHashLock].erc20Amount), "Failed to transfer locked asset to receiver address");
+        // Pay eth coin to receiver
+        swaps[_secretHashLock].receiverAddr.transfer(swaps[_secretHashLock].ETHCoin);
 
         // Emit completion event
         emit SwapCompletion(msg.sender, swaps[_secretHashLock].receiverAddr, _secretHashLock, _secretKey);
@@ -154,8 +138,8 @@ contract AtomicSwapper {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
-        // refund erc20 token to swap creator
-        require(ERC20(ERC20ContractAddr).transfer(swaps[_secretHashLock].sender, swaps[_secretHashLock].erc20Amount), "Failed to transfer locked asset to swap creator");
+        // refund eth coin to swap creator
+        swaps[_secretHashLock].sender.transfer(swaps[_secretHashLock].ETHCoin);
 
         // Emit expire event
         emit SwapExpire(msg.sender, swaps[_secretHashLock].sender, _secretHashLock);
@@ -166,40 +150,40 @@ contract AtomicSwapper {
     /// @notice query an atomic swap by secretHashLock
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
+    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
         Swap memory swap = swaps[_secretHashLock];
         States status = swapStates[_secretHashLock];
         return (
-            swap.timestamp,
-            swap.expireHeight,
-            swap.erc20Amount,
-            swap.bep2Amount,
-            swap.sender,
-            swap.receiverAddr,
-            swap.BEP2Addr,
-            swap.secretKey,
-            status
+        swap.timestamp,
+        swap.expireHeight,
+        swap.ETHCoin,
+        swap.bep2Amount,
+        swap.sender,
+        swap.receiverAddr,
+        swap.BEP2Addr,
+        swap.secretKey,
+        status
         );
     }
 
     /// @notice query an atomic swap by swap index
     ///
     /// @param _index The swap index
-    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
+    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
         bytes32 secretHashLock = indexToSecretHashLock[_index];
         Swap memory swap = swaps[secretHashLock];
         States status = swapStates[secretHashLock];
         return (
-            secretHashLock,
-            swap.timestamp,
-            swap.expireHeight,
-            swap.erc20Amount,
-            swap.bep2Amount,
-            swap.sender,
-            swap.receiverAddr,
-            swap.BEP2Addr,
-            swap.secretKey,
-            status
+        secretHashLock,
+        swap.timestamp,
+        swap.expireHeight,
+        swap.ETHCoin,
+        swap.bep2Amount,
+        swap.sender,
+        swap.receiverAddr,
+        swap.BEP2Addr,
+        swap.secretKey,
+        status
         );
     }
 

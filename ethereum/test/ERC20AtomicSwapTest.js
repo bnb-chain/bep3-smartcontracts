@@ -1,5 +1,5 @@
 const BNBToken = artifacts.require("BNBToken");
-const AtomicSwapper = artifacts.require("AtomicSwapper");
+const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const crypto = require('crypto');
 const truffleAssert = require('truffle-assertions');
 
@@ -17,8 +17,8 @@ function calculateSecretHashLock (secretKey, timestamp) {
     return "0x" + hash.digest('hex');
 }
 
-contract('Verify BNBToken and AtomicSwapper', (accounts) => {
-    it('Check init state for BNBToken and AtomicSwapper', async () => {
+contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
+    it('Check init state for BNBToken and ERC20AtomicSwapper', async () => {
         const initSupply = 10000000000000000;
 
         const bnbInstance = await BNBToken.deployed();
@@ -43,7 +43,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         const paused = await bnbInstance.paused.call();
         assert.equal(paused, false, "Contract paused status should be false");
 
-        const swapInstance = await AtomicSwapper.deployed();
+        const swapInstance = await ERC20AtomicSwapper.deployed();
         const erc20Address = await swapInstance.ERC20ContractAddr.call();
         assert.equal(erc20Address, BNBToken.address, "swap contract should have erc20 contract address");
 
@@ -79,7 +79,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(Number(balanceAcc2_1.toString()), amount, "acc2 balance should be " + amount);
     });
     it('Test secret hash lock calculation', async () => {
-        const swapInstance = await AtomicSwapper.deployed();
+        const swapInstance = await ERC20AtomicSwapper.deployed();
 
         const timestamp = Date.now();
         const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
@@ -88,7 +88,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(secretHashLock, calculateSecretHashLock(secretKey, timestamp), "the secretHashLock should equal to hash result of secretKey and timestamp");
     });
     it('Test swap initiate, claim', async () => {
-        const swapInstance = await AtomicSwapper.deployed();
+        const swapInstance = await ERC20AtomicSwapper.deployed();
         const bnbInstance = await BNBToken.deployed();
 
         const swapA = accounts[0];
@@ -106,7 +106,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         var initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
         assert.equal(initializable, true);
 
-        await bnbInstance.approve(AtomicSwapper.address, erc20Amount, { from: swapA });
+        await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
         let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInitialization event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'SwapInitialization', (ev) => {
@@ -125,7 +125,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(index, 1, "swap index initial value should be 1");
 
         // Verify if the swapped ERC20 token has been transferred to contract address
-        var balanceOfSwapContract = await bnbInstance.balanceOf.call(AtomicSwapper.address);
+        var balanceOfSwapContract = await bnbInstance.balanceOf.call(ERC20AtomicSwapper.address);
         assert.equal(Number(balanceOfSwapContract.toString()), erc20Amount);
 
         // querySwapByHashLock
@@ -174,7 +174,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         balanceOfSwapB = await bnbInstance.balanceOf.call(swapB);
         assert.equal(Number(balanceOfSwapB.toString()), erc20Amount);
 
-        balanceOfSwapContract = await bnbInstance.balanceOf.call(AtomicSwapper.address);
+        balanceOfSwapContract = await bnbInstance.balanceOf.call(ERC20AtomicSwapper.address);
         assert.equal(Number(balanceOfSwapContract.toString()), 0);
 
         claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();
@@ -183,7 +183,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         assert.equal(refundable, false);
     });
     it('Test swap initiate, refund', async () => {
-        const swapInstance = await AtomicSwapper.deployed();
+        const swapInstance = await ERC20AtomicSwapper.deployed();
         const bnbInstance = await BNBToken.deployed();
 
         const swapA = accounts[0];
@@ -201,7 +201,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         var initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
         assert.equal(initializable, true);
 
-        await bnbInstance.approve(AtomicSwapper.address, erc20Amount, { from: swapA });
+        await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
         let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInitialization event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'SwapInitialization', (ev) => {
@@ -258,7 +258,7 @@ contract('Verify BNBToken and AtomicSwapper', (accounts) => {
         var balanceOfSwapANew = await bnbInstance.balanceOf.call(swapA);
         assert.equal(Number(balanceOfSwapANew.toString()), Number(balanceOfSwapA.toString()) + erc20Amount);
 
-        var balanceOfSwapContract = await bnbInstance.balanceOf.call(AtomicSwapper.address);
+        var balanceOfSwapContract = await bnbInstance.balanceOf.call(ERC20AtomicSwapper.address);
         assert.equal(Number(balanceOfSwapContract.toString()), 0);
 
         claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();
