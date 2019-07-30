@@ -2,7 +2,7 @@
 
 ## Summary
 
-This contract implement secret hash lock mechanism which enables atomic swap between ERC20 token and any other tokens from different Blockchains which also implement this mechanism. 
+This contract implement secret hash lock mechanism which enables atomic swap between ERC20 token and BEP2 tokens on Binance Chain. 
 
 ## Smart Contract Interface
 
@@ -34,8 +34,8 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
                 bytes20 BEP2Addr;
             }
         ```
-    4. `expireHeight` equals to `block.number + _timelock`.
-    5. `sender` equals to `msg.sender`.
+    4. `expireHeight` = `block.number + _timelock`.
+    5. `sender` = `msg.sender`.
     6. Mark `Swap` status to `OPEN`.
     7. Increase swap `index`.
     8. Emit **SwapInitialization** event.

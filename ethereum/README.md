@@ -23,4 +23,4 @@
     
 ## Specification
 
-Please refer to [specification](./spec/atomicSwap.md)
+Please refer to [ERC20 swap](spec/ERC20AtomicSwap.md) and [ETH swap](spec/ETHAtomicSwap.md)
