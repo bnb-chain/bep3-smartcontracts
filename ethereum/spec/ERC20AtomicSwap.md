@@ -2,7 +2,7 @@
 
 ## Summary
 
-This contract implement secret hash lock mechanism which enables atomic swap between ERC20 token and any other tokens from different Blockchains which also implement this mechanism. 
+This contract implement secret hash lock mechanism which enables atomic swap between ERC20 token and BEP2 tokens on Binance Chain. 
 
 ## Smart Contract Interface
 
@@ -34,11 +34,11 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
                 bytes20 BEP2Addr;
             }
         ```
-    4. `expireHeight` equals to `block.number + _timelock`.
-    5. `sender` equals to `msg.sender`.
+    4. `expireHeight` = `block.number + _timelock`.
+    5. `sender` = `msg.sender`.
     6. Mark `Swap` status to `OPEN`.
     7. Increase swap `index`.
-    8. Emit **SwapInitialization** event.
+    8. Emit **SwapInit** event.
     
 2. function **refund**(bytes32 _secretHashLock)
     
@@ -64,7 +64,7 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
     5. Save `_secretKey` to `Swap.secretKey` and update `Swap`. Then anyone can get the `secretKey` later.
     6. Transfer `Swap.erc20Amount` ERC20 token from swap contract address to `Swap.receiverAddr`
     7. Mark `Swap` status to `COMPLETED`.
-    8. Emit **SwapCompletion** event
+    8. Emit **SwapComplete** event
 
 ### Query interfaces
 
@@ -94,15 +94,15 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
 
 ### Event
 
-1. event **SwapInitialization**(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
+1. event **SwapInit**(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
 
-    Once a swap is created, then event **SwapInitialization** will be emitted. Client can monitor this event to get all new created swaps.
+    Once a swap is created, then event **SwapInit** will be emitted. Client can monitor this event to get all new created swaps.
 
 2. event **SwapExpire**(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
 
     One a swap expire height is passed and someone call **refund** function, then event **SwapExpire** will be emitted.
     
-3. event **SwapCompletion**(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
+3. event **SwapComplete**(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
 
-    If someone call **claim** to a swap with correct secretKey and the swap expire height is not passed, then event **SwapCompletion** will be emitted. Client can monitor this event to get the secretKey.
+    If someone call **claim** to a swap with correct secretKey and the swap expire height is not passed, then event **SwapComplete** will be emitted. Client can monitor this event to get the secretKey.
 
