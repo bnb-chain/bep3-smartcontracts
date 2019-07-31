@@ -32,9 +32,9 @@ contract ERC20AtomicSwapper {
     }
 
     // Events
-    event SwapInitialization(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
+    event SwapInit(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
     event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
-    event SwapCompletion(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
+    event SwapComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
 
     // Storage
     mapping (bytes32 => Swap) private swaps;
@@ -125,7 +125,7 @@ contract ERC20AtomicSwapper {
         index = index + 1;
 
         // Emit initialization event
-        emit SwapInitialization(msg.sender, _receiverAddr, _BEP2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, _erc20Amount, _bep2Amount);
+        emit SwapInit(msg.sender, _receiverAddr, _BEP2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, _erc20Amount, _bep2Amount);
         return true;
     }
 
@@ -142,7 +142,7 @@ contract ERC20AtomicSwapper {
         require(ERC20(ERC20ContractAddr).transfer(swaps[_secretHashLock].receiverAddr, swaps[_secretHashLock].erc20Amount), "Failed to transfer locked asset to receiver address");
 
         // Emit completion event
-        emit SwapCompletion(msg.sender, swaps[_secretHashLock].receiverAddr, _secretHashLock, _secretKey);
+        emit SwapComplete(msg.sender, swaps[_secretHashLock].receiverAddr, _secretHashLock, _secretKey);
 
         return true;
     }

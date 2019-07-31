@@ -49,8 +49,8 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const initialbalanceOfSwapB = await web3.eth.getBalance(swapB);
 
         let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, bep2Amount, { from: swapA , value: ETHCoin});
-        //SwapInitialization event should be emitted
-        truffleAssert.eventEmitted(initiateTx, 'SwapInitialization', (ev) => {
+        //SwapInit event should be emitted
+        truffleAssert.eventEmitted(initiateTx, 'SwapInit', (ev) => {
             return ev._msgSender === swapA &&
                 ev._receiverAddr === swapB &&
                 ev._BEP2Addr === BEP2Addr &&
@@ -108,8 +108,8 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
 
         // Anyone can call claim and the token will be paid to swapB address
         let claimTx = await swapInstance.claim(secretHashLock, secretKey, { from: accounts[6] });
-        //SwapCompletion n event should be emitted
-        truffleAssert.eventEmitted(claimTx, 'SwapCompletion', (ev) => {
+        //SwapComplete n event should be emitted
+        truffleAssert.eventEmitted(claimTx, 'SwapComplete', (ev) => {
             return ev._msgSender === accounts[6] && ev._receiverAddr === swapB && ev._secretHashLock === secretHashLock && ev._secretKey === secretKey;
         });
 
@@ -151,8 +151,8 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const initialbalanceOfSwapB = await web3.eth.getBalance(swapB);
 
         let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, bep2Amount, { from: swapA , value: ETHCoin});
-        //SwapInitialization event should be emitted
-        truffleAssert.eventEmitted(initiateTx, 'SwapInitialization', (ev) => {
+        //SwapInit event should be emitted
+        truffleAssert.eventEmitted(initiateTx, 'SwapInit', (ev) => {
             return ev._msgSender === swapA &&
                 ev._receiverAddr === swapB &&
                 ev._BEP2Addr === BEP2Addr &&
