@@ -8,12 +8,12 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
 
 ### Transaction interfaces
 
-1. function **initiate**(bytes32 _secretHashLock, uint64 _timestamp, uint256 _timelock, address _receiverAddr, bytes20 _BEP2Addr, uint256 _bep2Amount) **payable**
-    1. `_timestamp` is supposed to be the time of sending transaction, counted by second.
+1. function **initiate**(bytes32 _secretHashLock, uint64 _timestamp, uint256 _timelock, address _receiverAddr, bytes20 _bep2Addr, uint256 _bep2Amount) **payable**
+    1. `_timestamp` is supposed to be the time of sending transaction, counted by second, it should not be one hour ahead or two hour behind current time.
     2. `_secretHashLock` is the hash of `_secretKey` and `_timestamp`
     3. `_timelock` is the number of blocks to wait before the asset can be refunded
     4. `_receiverAddr` is the Ethereum address of swap counter party
-    5. `_BEP2Addr` is the receiver address on Binance Chain. 
+    5. `_bep2Addr` is the receiver address on Binance Chain. 
     7. `_bep2Amount` is the expected received BEP2 token on Binance Chain.
      
     This interface will transfer ETH coin to the swap contract address.
@@ -28,7 +28,7 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
                 uint64 timestamp;
                 address sender;
                 address receiverAddr;
-                bytes20 BEP2Addr;
+                bytes20 bep2Addr;
             }
         ```
     3. `ETHCoin` = `msg.value`
@@ -78,11 +78,11 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
 
     Judge if the asset locked by the specified swap can be claimed or not. If true, anyone can call claim function to transfer locked asset to the `_receiverAddr` address.
 
-4. function **querySwapByHashLock**(bytes32 _secretHashLock) returns (uint64 _timestamp,  uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, uint8 _status)
+4. function **querySwapByHashLock**(bytes32 _secretHashLock) returns (uint64 _timestamp,  uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, uint8 _status)
 
     Query swap record by secret hash lock.
     
-5. function **querySwapByIndex**(uin256 _index) returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, uint8 _status)
+5. function **querySwapByIndex**(uin256 _index) returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, uint8 _status)
 
     Query swap record by swap index. The index is a sequence number of a swap. For instance, the index of the first swap is 0.
 
@@ -92,7 +92,7 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
 
 ### Event
 
-1. event **SwapInit**(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount);
+1. event **SwapInit**(address indexed _msgSender, address indexed _receiverAddr, bytes20 _bep2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount);
 
     Once a swap is created, then event **SwapInit** will be emitted. Client can monitor this event to get all new created swaps.
 
