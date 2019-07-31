@@ -33,12 +33,12 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const swapA = accounts[1];
         const swapB = accounts[2];
 
-        const timestamp = Date.now();
+        const timestamp = Math.floor(Date.now()/1000); // counted by second
         const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
         const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
         const timelock = 1000;
         const receiverAddr = swapB;
-        const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
+        const bep2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
         const ETHCoin = 100000000;
         const bep2Amount = 100000000;
 
@@ -48,12 +48,12 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const initialbalanceOfSwapA = await web3.eth.getBalance(swapA);
         const initialbalanceOfSwapB = await web3.eth.getBalance(swapB);
 
-        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, bep2Amount, { from: swapA , value: ETHCoin});
+        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, bep2Amount, { from: swapA , value: ETHCoin});
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'SwapInit', (ev) => {
             return ev._msgSender === swapA &&
                 ev._receiverAddr === swapB &&
-                ev._BEP2Addr === BEP2Addr &&
+                ev._bep2Addr === bep2Addr &&
                 Number(ev._index.toString()) === 0 &&
                 ev._secretHashLock === secretHashLock &&
                 Number(ev._timestamp.toString()) === timestamp &&
@@ -76,7 +76,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         assert.equal(ETHCoin, swap._ETHCoin);
         assert.equal(bep2Amount, swap._bep2Amount);
         assert.equal(swapA, swap._sender);
-        assert.equal(BEP2Addr, swap._BEP2Addr);
+        assert.equal(bep2Addr, swap._bep2Addr);
         // swap status should be OPEN 1
         assert.equal(1, swap._status);
         //querySwapByIndex
@@ -87,7 +87,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         assert.equal(ETHCoin, swap._ETHCoin);
         assert.equal(bep2Amount, swap._bep2Amount);
         assert.equal(swapA, swap._sender);
-        assert.equal(BEP2Addr, swap._BEP2Addr);
+        assert.equal(bep2Addr, swap._bep2Addr);
         assert.equal(1, swap._status);
 
         initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
@@ -135,12 +135,12 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const swapA = accounts[3];
         const swapB = accounts[4];
 
-        const timestamp = Date.now();
-        const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
+        const timestamp = Math.floor(Date.now()/1000); // counted by second
+        const secretKey = "0x1122334411223344112233441122334411223344112233441122334411223344";
         const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
         const timelock = 100;
         const receiverAddr = swapB;
-        const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
+        const bep2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
         const ETHCoin = 100000000;
         const bep2Amount = 100000000;
 
@@ -150,12 +150,12 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const initialbalanceOfSwapA = await web3.eth.getBalance(swapA);
         const initialbalanceOfSwapB = await web3.eth.getBalance(swapB);
 
-        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, bep2Amount, { from: swapA , value: ETHCoin});
+        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, bep2Amount, { from: swapA , value: ETHCoin});
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'SwapInit', (ev) => {
             return ev._msgSender === swapA &&
                 ev._receiverAddr === swapB &&
-                ev._BEP2Addr === BEP2Addr &&
+                ev._bep2Addr === bep2Addr &&
                 Number(ev._index.toString()) === 1 &&
                 ev._secretHashLock === secretHashLock &&
                 Number(ev._timestamp.toString()) === timestamp &&

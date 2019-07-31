@@ -21,7 +21,7 @@ contract ERC20AtomicSwapper {
 
         address sender;
         address receiverAddr;
-        bytes20 BEP2Addr;
+        bytes20 bep2Addr;
     }
 
     enum States {
@@ -32,7 +32,7 @@ contract ERC20AtomicSwapper {
     }
 
     // Events
-    event SwapInit(address indexed _msgSender, address indexed _receiverAddr, bytes20 _BEP2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
+    event SwapInit(address indexed _msgSender, address indexed _receiverAddr, bytes20 _bep2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount);
     event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
     event SwapComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
 
@@ -88,7 +88,7 @@ contract ERC20AtomicSwapper {
     /// @param _timestamp Counted by second
     /// @param _timelock The number of blocks to wait before the asset can be returned to sender
     /// @param _receiverAddr The ethereum address of the swap counterpart.
-    /// @param _BEP2Addr The receiver address on Binance Chain
+    /// @param _bep2Addr The receiver address on Binance Chain
     /// @param _erc20Amount ERC20 asset to swap out.
     /// @param _bep2Amount BEP2 asset to swap in.
     function initiate(
@@ -96,14 +96,15 @@ contract ERC20AtomicSwapper {
         uint64  _timestamp,
         uint256 _timelock,
         address _receiverAddr,
-        bytes20 _BEP2Addr,
+        bytes20 _bep2Addr,
         uint256 _erc20Amount,
         uint256 _bep2Amount
     ) external onlyInvalidSwaps(_secretHashLock) returns (bool) {
-        // Assume average block time interval is 10 second
+        // Assume average block time interval is 15 second
         // The timelock period should be more than 10 minutes and less than one week
-        require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
+        require(_timelock >= 40 && _timelock <= 40320, "_timelock should be in [40, 40320]");
         require(_receiverAddr != address(0), "_receiverAddr should not be zero");
+        require(_timestamp > now - 7200 && _timestamp < now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
         // Transfer ERC20 token to the swap contract
         require(ERC20(ERC20ContractAddr).transferFrom(msg.sender, address(this), _erc20Amount), "failed to transfer client asset to swap contract address");
         // Store the details of the swap.
@@ -115,7 +116,7 @@ contract ERC20AtomicSwapper {
             timestamp: _timestamp,
             sender: msg.sender,
             receiverAddr: _receiverAddr,
-            BEP2Addr: _BEP2Addr
+            bep2Addr: _bep2Addr
             });
         uint256 curIndex = index;
 
@@ -125,7 +126,7 @@ contract ERC20AtomicSwapper {
         index = index + 1;
 
         // Emit initialization event
-        emit SwapInit(msg.sender, _receiverAddr, _BEP2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, _erc20Amount, _bep2Amount);
+        emit SwapInit(msg.sender, _receiverAddr, _bep2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, _erc20Amount, _bep2Amount);
         return true;
     }
 
@@ -166,7 +167,7 @@ contract ERC20AtomicSwapper {
     /// @notice query an atomic swap by secretHashLock
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
+    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, States _status) {
         Swap memory swap = swaps[_secretHashLock];
         States status = swapStates[_secretHashLock];
         return (
@@ -176,7 +177,7 @@ contract ERC20AtomicSwapper {
             swap.bep2Amount,
             swap.sender,
             swap.receiverAddr,
-            swap.BEP2Addr,
+            swap.bep2Addr,
             swap.secretKey,
             status
         );
@@ -185,7 +186,7 @@ contract ERC20AtomicSwapper {
     /// @notice query an atomic swap by swap index
     ///
     /// @param _index The swap index
-    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _BEP2Addr, bytes32 _secretKey, States _status) {
+    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _erc20Amount, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, States _status) {
         bytes32 secretHashLock = indexToSecretHashLock[_index];
         Swap memory swap = swaps[secretHashLock];
         States status = swapStates[secretHashLock];
@@ -197,7 +198,7 @@ contract ERC20AtomicSwapper {
             swap.bep2Amount,
             swap.sender,
             swap.receiverAddr,
-            swap.BEP2Addr,
+            swap.bep2Addr,
             swap.secretKey,
             status
         );
