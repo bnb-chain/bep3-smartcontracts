@@ -50,7 +50,7 @@ contract('AtomicSwapper', (accounts) => {
     const timestamp = 1565312187607;
     const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
     const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
-    const timelock = 1000;
+    const timelock = 257;
     const receiverAddr = swapB;
     const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
     const outAmount = 100000000;
@@ -76,7 +76,7 @@ contract('AtomicSwapper', (accounts) => {
         it('refund', async function() {
             let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
             // Just for producing new blocks
-            for (var i = 0; i <timelock; i++) {
+            for (var i = 0; i < timelock; i++) {
                 await this.bnbInstance.transfer(owner, 10, { from: owner });
             }
             let refundTx = await this.swapInstance.refund(secretHashLock, { from: operator });
