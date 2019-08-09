@@ -8,7 +8,9 @@ let profile;
 try {
     profile = require('../GasProfile.json') || {};
 } catch (error) {
-    console.error(error);
+    if (!error.message.startsWith('Cannot find module')) {
+        console.error(error);
+    }
     console.log('Creating GasProfile.json')
     profile = {}
 }
