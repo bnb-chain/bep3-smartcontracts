@@ -46,29 +46,45 @@ function hasNoZero(address) {
 
 contract('AtomicSwapper', (accounts) => {
     const [_, owner, operator, swapA, swapB] = accounts.filter(hasNoZero)
+    // Constant swap parameters
+    const timestamp = 1565312187607;
+    const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
+    const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
+    const timelock = 1000;
+    const receiverAddr = swapB;
+    const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
+    const outAmount = 100000000;
+    const inAmount = 100000000;
+
     describe('--Gas Profiling--', function() {
         beforeEach(async function() {
             this.supply = 10000000000000000;
             this.bnbInstance = await BNBToken.new(web3.utils.toHex(this.supply), "BNB Token", "BNB", 8, {from:owner});
             this.swapInstance = await AtomicSwapper.new(this.bnbInstance.address, {from:operator});
-        })
-        it('initiateTx', async function() {
-            const timestamp = 1565312187607;
-            const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
-            const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
-            const timelock = 1000;
-            const receiverAddr = swapB;
-            const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
-            const outAmount = 100000000;
-            const inAmount = 100000000;
             await this.bnbInstance.transfer(swapA, inAmount, {from: owner});
             await this.bnbInstance.approve(this.swapInstance.address, outAmount, { from: swapA });
+        })
+        it('initiateTx and claim', async function() {
             let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+            let claimTx = await this.swapInstance.claim(secretHashLock, secretKey, { from: operator });
             const actual = {
                 initiateTx: initiateTx.receipt.gasUsed,
+                claimTx: claimTx.receipt.gasUsed,
             }
             showRegressions(actual)
-         })
+        })
+        it('refund', async function() {
+            let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+            // Just for producing new blocks
+            for (var i = 0; i <timelock; i++) {
+                await this.bnbInstance.transfer(owner, 10, { from: owner });
+            }
+            let refundTx = await this.swapInstance.refund(secretHashLock, { from: operator });
+            const actual = {
+                refundTx: initiateTx.receipt.gasUsed,
+            }
+            showRegressions(actual)
+        })
         after(async function() {
             await new Promise((resolve, reject) => {
                 console.log('Writing GasProfile.json')
