@@ -100,9 +100,9 @@ contract ERC20AtomicSwapper {
         uint256 _erc20Amount,
         uint256 _bep2Amount
     ) external onlyInvalidSwaps(_secretHashLock) returns (bool) {
-        // Assume average block time interval is 10 second
+        // Assume average block time interval is 15 second
         // The timelock period should be more than 10 minutes and less than one week
-        require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
+        require(_timelock >= 40 && _timelock <= 40320, "_timelock should be in [40, 40320]");
         require(_receiverAddr != address(0), "_receiverAddr should not be zero");
         require(_timestamp > now - 7200 && _timestamp < now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
         // Transfer ERC20 token to the swap contract
