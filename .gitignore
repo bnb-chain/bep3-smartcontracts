@@ -2,3 +2,7 @@
 ethereum/node_modules
 ethereum/package-lock.json
 ethereum/build/
+
+# VIM
+*.swo
+*.swp
