@@ -2,7 +2,8 @@ const fs = require('fs')
 const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const truffleAssert = require('truffle-assertions');
-const calculateSecretHashLock = require('./secretHashLock')
+const calculateSecretHashLock = require('./secretHashLock');
+const timeTraveler = require('ganache-time-traveler');
 
 let profile;
 try {
@@ -75,9 +76,9 @@ contract('ERC20AtomicSwapper', (accounts) => {
         })
         it('refund', async function() {
             let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
-            // Just for producing new blocks
+            // advance to expiration
             for (var i = 0; i < timelock; i++) {
-                await this.bnbInstance.transfer(owner, 10, { from: owner });
+                timeTraveler.advanceBlock();
             }
             let refundTx = await this.swapInstance.refund(secretHashLock, { from: operator });
             const actual = {
