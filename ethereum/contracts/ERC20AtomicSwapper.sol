@@ -104,6 +104,7 @@ contract ERC20AtomicSwapper {
         // The timelock period should be more than 10 minutes and less than one week
         require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
         require(_receiverAddr != address(0), "_receiverAddr should not be zero");
+        require(_timestamp > now - 7200 && _timestamp < now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
         // Transfer ERC20 token to the swap contract
         require(ERC20(ERC20ContractAddr).transferFrom(msg.sender, address(this), _erc20Amount), "failed to transfer client asset to swap contract address");
         // Store the details of the swap.

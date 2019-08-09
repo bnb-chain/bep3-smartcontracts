@@ -47,7 +47,7 @@ function hasNoZero(address) {
 contract('ERC20AtomicSwapper', (accounts) => {
     const [_, owner, operator, swapA, swapB] = accounts.filter(hasNoZero)
     // Constant swap parameters
-    const timestamp = 1565312187607;
+    const timestamp = 1565312187;
     const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
     const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
     const timelock = 257;

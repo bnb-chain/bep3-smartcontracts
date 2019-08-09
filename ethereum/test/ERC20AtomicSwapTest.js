@@ -69,7 +69,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
     it('Test secret hash lock calculation', async () => {
         const swapInstance = await ERC20AtomicSwapper.deployed();
 
-        const timestamp = Date.now();
+        const timestamp = 1565312187;
         const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
         const secretHashLock = (await swapInstance.calSecretHash.call(secretKey, timestamp));
 
@@ -82,7 +82,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const swapA = accounts[0];
         const swapB = accounts[4];
 
-        const timestamp = Math.floor(Date.now()/1000); // counted by second
+        const timestamp = 1565312187; // counted by second
         const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
         const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
         const timelock = 1000;
@@ -177,7 +177,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const swapA = accounts[0];
         const swapB = accounts[5];
 
-        const timestamp = Math.floor(Date.now()/1000); // counted by second
+        const timestamp = 1565312187; // counted by second
         const secretKey = "0x5566778855667788556677885566778855667788556677885566778855667788";
         const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
         const timelock = 100;

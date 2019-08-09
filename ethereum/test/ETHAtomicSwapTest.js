@@ -21,7 +21,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
     it('Test secret hash lock calculation', async () => {
         const swapInstance = await ETHAtomicSwapper.deployed();
 
-        const timestamp = Date.now();
+        const timestamp = 1565312187;
         const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
         const secretHashLock = (await swapInstance.calSecretHash.call(secretKey, timestamp));
 
@@ -33,7 +33,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const swapA = accounts[1];
         const swapB = accounts[2];
 
-        const timestamp = Math.floor(Date.now()/1000); // counted by second
+        const timestamp = 1565312187; // counted by second
         const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
         const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
         const timelock = 1000;
@@ -135,7 +135,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const swapA = accounts[3];
         const swapB = accounts[4];
 
-        const timestamp = Math.floor(Date.now()/1000); // counted by second
+        const timestamp = 1565312187; // counted by second
         const secretKey = "0x1122334411223344112233441122334411223344112233441122334411223344";
         const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
         const timelock = 100;
