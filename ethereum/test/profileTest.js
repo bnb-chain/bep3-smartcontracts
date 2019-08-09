@@ -1,6 +1,6 @@
 const fs = require('fs')
 const BNBToken = artifacts.require("BNBToken");
-const AtomicSwapper = artifacts.require("AtomicSwapper");
+const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const truffleAssert = require('truffle-assertions');
 const calculateSecretHashLock = require('./secretHashLock')
 
@@ -44,7 +44,7 @@ function hasNoZero(address) {
 }
 
 
-contract('AtomicSwapper', (accounts) => {
+contract('ERC20AtomicSwapper', (accounts) => {
     const [_, owner, operator, swapA, swapB] = accounts.filter(hasNoZero)
     // Constant swap parameters
     const timestamp = 1565312187607;
@@ -60,7 +60,7 @@ contract('AtomicSwapper', (accounts) => {
         beforeEach(async function() {
             this.supply = 10000000000000000;
             this.bnbInstance = await BNBToken.new(web3.utils.toHex(this.supply), "BNB Token", "BNB", 8, {from:owner});
-            this.swapInstance = await AtomicSwapper.new(this.bnbInstance.address, {from:operator});
+            this.swapInstance = await ERC20AtomicSwapper.new(this.bnbInstance.address, {from:operator});
             await this.bnbInstance.transfer(swapA, inAmount, {from: owner});
             await this.bnbInstance.approve(this.swapInstance.address, outAmount, { from: swapA });
         })
