@@ -217,7 +217,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
 
         // Advance to expiration
         for (var i = 0; i < timelock; i++) {
-            timeTraveler.advanceBlock();
+            await timeTraveler.advanceBlock();
         }
 
         claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();

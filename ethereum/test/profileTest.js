@@ -78,7 +78,7 @@ contract('ERC20AtomicSwapper', (accounts) => {
             let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
             // advance to expiration
             for (var i = 0; i < timelock; i++) {
-                timeTraveler.advanceBlock();
+                await timeTraveler.advanceBlock();
             }
             let refundTx = await this.swapInstance.refund(secretHashLock, { from: operator });
             const actual = {
