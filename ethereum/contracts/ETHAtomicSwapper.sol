@@ -3,16 +3,11 @@ pragma solidity ^0.5.8;
 contract ETHAtomicSwapper {
 
     struct Swap {
-        uint256 ETHCoin;
-        uint256 bep2Amount;
-
+        uint256 outAmount;
         uint256 expireHeight;
-        bytes32 secretKey;
         uint64  timestamp;
-
         address payable sender;
         address payable receiverAddr;
-        bytes20 bep2Addr;
     }
 
     enum States {
@@ -23,16 +18,13 @@ contract ETHAtomicSwapper {
     }
 
     // Events
-    event SwapInit(address indexed _msgSender, address indexed _receiverAddr, bytes20 _bep2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount);
-    event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
-    event SwapComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
+    event SwapInit(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
+    event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
+    event SwapComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
 
     // Storage
     mapping (bytes32 => Swap) private swaps;
     mapping (bytes32 => States) private swapStates;
-    mapping (uint256 => bytes32) private indexToSecretHashLock;
-
-    uint256 public index;
 
     /// @notice Throws if the swap is not invalid (i.e. has already been used)
     modifier onlyInvalidSwaps(bytes32 _secretHashLock) {
@@ -66,10 +58,6 @@ contract ETHAtomicSwapper {
         _;
     }
 
-    constructor() public {
-        index = 0;
-    }
-
     /// @notice Initiates an atomic swap.
     ///
     /// @param _secretHashLock The hash of the secret key and timestamp
@@ -86,31 +74,25 @@ contract ETHAtomicSwapper {
         bytes20 _bep2Addr,
         uint256 _bep2Amount
     ) external onlyInvalidSwaps(_secretHashLock) payable returns (bool) {
-        // Assume average block time interval is 15 second
+        // Assume average block time interval is 10 second
         // The timelock period should be more than 10 minutes and less than one week
-        require(_timelock >= 40 && _timelock <= 40320, "_timelock should be in [40, 40320]");
+        require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
         require(_receiverAddr != address(0), "_receiverAddr should not be zero");
         require(_timestamp >= now - 7200 && _timestamp <= now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
         // Store the details of the swap.
         Swap memory swap = Swap({
-            ETHCoin: msg.value,
-            bep2Amount: _bep2Amount,
+            outAmount: msg.value,
             expireHeight: _timelock + block.number,
-            secretKey: 0x0,
             timestamp: _timestamp,
             sender: msg.sender,
-            receiverAddr: _receiverAddr,
-            bep2Addr: _bep2Addr
+            receiverAddr: _receiverAddr
             });
-        uint256 curIndex = index;
 
         swaps[_secretHashLock] = swap;
         swapStates[_secretHashLock] = States.OPEN;
-        indexToSecretHashLock[curIndex] = _secretHashLock;
-        index = index + 1;
 
         // Emit initialization event
-        emit SwapInit(msg.sender, _receiverAddr, _bep2Addr, curIndex,  _secretHashLock, _timestamp, swap.expireHeight, msg.value, _bep2Amount);
+        emit SwapInit(msg.sender, _receiverAddr, _secretHashLock, _timestamp, _bep2Addr, swap.expireHeight, msg.value, _bep2Amount);
         return true;
     }
 
@@ -120,14 +102,20 @@ contract ETHAtomicSwapper {
     /// @param _secretKey The secret of the atomic swap.
     function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyBeforeExpireHeight(_secretHashLock) onlyOpenSwaps(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
         // Complete the swap.
-        swaps[_secretHashLock].secretKey = _secretKey;
         swapStates[_secretHashLock] = States.COMPLETED;
 
+        Swap memory swap = swaps[_secretHashLock];
+        address payable receiverAddr = swap.receiverAddr;
+        uint256 outAmount = swap.outAmount;
+
         // Pay eth coin to receiver
-        swaps[_secretHashLock].receiverAddr.transfer(swaps[_secretHashLock].ETHCoin);
+        receiverAddr.transfer(outAmount);
+
+        // delete closed swap
+        delete swaps[_secretHashLock];
 
         // Emit completion event
-        emit SwapComplete(msg.sender, swaps[_secretHashLock].receiverAddr, _secretHashLock, _secretKey);
+        emit SwapComplete(msg.sender, receiverAddr, _secretHashLock, _secretKey);
 
         return true;
     }
@@ -139,11 +127,18 @@ contract ETHAtomicSwapper {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
+        Swap memory swap = swaps[_secretHashLock];
+        address payable sender = swap.sender;
+        uint256 outAmount = swap.outAmount;
+
         // refund eth coin to swap creator
-        swaps[_secretHashLock].sender.transfer(swaps[_secretHashLock].ETHCoin);
+        sender.transfer(outAmount);
+
+        // delete closed swap
+        delete swaps[_secretHashLock];
 
         // Emit expire event
-        emit SwapExpire(msg.sender, swaps[_secretHashLock].sender, _secretHashLock);
+        emit SwapExpire(msg.sender, sender, _secretHashLock);
 
         return true;
     }
@@ -151,40 +146,14 @@ contract ETHAtomicSwapper {
     /// @notice query an atomic swap by secretHashLock
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function querySwapByHashLock(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, States _status) {
+    function queryOpenSwap(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, address _sender, address _receiver) {
         Swap memory swap = swaps[_secretHashLock];
-        States status = swapStates[_secretHashLock];
         return (
         swap.timestamp,
         swap.expireHeight,
-        swap.ETHCoin,
-        swap.bep2Amount,
+        swap.outAmount,
         swap.sender,
-        swap.receiverAddr,
-        swap.bep2Addr,
-        swap.secretKey,
-        status
-        );
-    }
-
-    /// @notice query an atomic swap by swap index
-    ///
-    /// @param _index The swap index
-    function querySwapByIndex(uint256 _index) external view returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, States _status) {
-        bytes32 secretHashLock = indexToSecretHashLock[_index];
-        Swap memory swap = swaps[secretHashLock];
-        States status = swapStates[secretHashLock];
-        return (
-        secretHashLock,
-        swap.timestamp,
-        swap.expireHeight,
-        swap.ETHCoin,
-        swap.bep2Amount,
-        swap.sender,
-        swap.receiverAddr,
-        swap.bep2Addr,
-        swap.secretKey,
-        status
+        swap.receiverAddr
         );
     }
 
