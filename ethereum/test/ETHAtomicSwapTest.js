@@ -42,56 +42,35 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const ETHCoin = 100000000;
         const bep2Amount = 100000000;
 
-        var initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
-        assert.equal(initializable, true);
+        var hashLockable = (await swapInstance.hashLockable.call(secretHashLock)).valueOf();
+        assert.equal(hashLockable, true);
 
         const initialbalanceOfSwapA = await web3.eth.getBalance(swapA);
         const initialbalanceOfSwapB = await web3.eth.getBalance(swapB);
 
-        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, bep2Amount, { from: swapA , value: ETHCoin});
+        let initiateTx = await swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, bep2Amount, { from: swapA , value: ETHCoin});
         //SwapInit event should be emitted
-        truffleAssert.eventEmitted(initiateTx, 'SwapInit', (ev) => {
+        truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
                 ev._receiverAddr === swapB &&
                 ev._bep2Addr === bep2Addr &&
-                Number(ev._index.toString()) === 0 &&
                 ev._secretHashLock === secretHashLock &&
                 Number(ev._timestamp.toString()) === timestamp &&
-                Number(ev._ETHCoin.toString()) === ETHCoin &&
+                Number(ev._outAmount.toString()) === ETHCoin &&
                 Number(ev._bep2Amount.toString()) === bep2Amount;
         });
-
-        //Verify swap index
-        const index = await swapInstance.index.call();
-        assert.equal(index, 1, "swap index initial value should be 1");
 
         // Verify if the swapped ERC20 token has been transferred to contract address
         var balanceOfSwapContract = await web3.eth.getBalance(ETHAtomicSwapper.address);
         assert.equal(Number(balanceOfSwapContract.toString()), ETHCoin);
 
         // querySwapByHashLock
-        var swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
+        var swap = (await swapInstance.queryOpenSwap.call(secretHashLock)).valueOf();
         assert.equal(timestamp, swap._timestamp);
-        assert.equal(0x0, swap._secretKey);
-        assert.equal(ETHCoin, swap._ETHCoin);
-        assert.equal(bep2Amount, swap._bep2Amount);
-        assert.equal(swapA, swap._sender);
-        assert.equal(bep2Addr, swap._bep2Addr);
-        // swap status should be OPEN 1
-        assert.equal(1, swap._status);
-        //querySwapByIndex
-        swap = (await swapInstance.querySwapByIndex.call(0)).valueOf();
-        assert.equal(secretHashLock, swap._secretHashLock);
-        assert.equal(timestamp, swap._timestamp);
-        assert.equal(0x0, swap._secretKey);
-        assert.equal(ETHCoin, swap._ETHCoin);
-        assert.equal(bep2Amount, swap._bep2Amount);
-        assert.equal(swapA, swap._sender);
-        assert.equal(bep2Addr, swap._bep2Addr);
-        assert.equal(1, swap._status);
+        assert.equal(ETHCoin, swap._outAmount);
 
-        initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
-        assert.equal(initializable, false);
+        hashLockable = (await swapInstance.hashLockable.call(secretHashLock)).valueOf();
+        assert.equal(hashLockable, false);
         var claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();
         assert.equal(claimable, true);
         var refundable = (await swapInstance.refundable.call(secretHashLock)).valueOf();
@@ -100,6 +79,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const gasUsed = initiateTx.receipt.gasUsed;
         const tx = await web3.eth.getTransaction(initiateTx.tx);
         const txFee = gasUsed * tx.gasPrice;
+        console.log("initiateTx gasUsed: ", initiateTx.receipt.gasUsed);
 
         var balanceOfSwapA = await web3.eth.getBalance(swapA);
         assert.equal(balanceOfSwapA.toString(), new Big(initialbalanceOfSwapA).minus(ETHCoin).minus(txFee).toString());
@@ -109,14 +89,10 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         // Anyone can call claim and the token will be paid to swapB address
         let claimTx = await swapInstance.claim(secretHashLock, secretKey, { from: accounts[6] });
         //SwapComplete n event should be emitted
-        truffleAssert.eventEmitted(claimTx, 'SwapComplete', (ev) => {
+        truffleAssert.eventEmitted(claimTx, 'Claimed', (ev) => {
             return ev._msgSender === accounts[6] && ev._receiverAddr === swapB && ev._secretHashLock === secretHashLock && ev._secretKey === secretKey;
         });
-
-        swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
-        // swap status should be COMPLETED 2
-        assert.equal(2, swap._status);
-        assert.equal(secretKey, swap._secretKey);
+        console.log("claimTx gasUsed: ", claimTx.receipt.gasUsed);
 
         balanceOfSwapB = await web3.eth.getBalance(swapB);
         assert.equal(balanceOfSwapB.toString(), new Big(initialbalanceOfSwapB).plus(ETHCoin).toString());
@@ -144,34 +120,31 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const ETHCoin = 100000000;
         const bep2Amount = 100000000;
 
-        var initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
-        assert.equal(initializable, true);
+        var hashLockable = (await swapInstance.hashLockable.call(secretHashLock)).valueOf();
+        assert.equal(hashLockable, true);
 
         const initialbalanceOfSwapA = await web3.eth.getBalance(swapA);
         const initialbalanceOfSwapB = await web3.eth.getBalance(swapB);
 
-        let initiateTx = await swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, bep2Amount, { from: swapA , value: ETHCoin});
+        let initiateTx = await swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, bep2Amount, { from: swapA , value: ETHCoin});
         //SwapInit event should be emitted
-        truffleAssert.eventEmitted(initiateTx, 'SwapInit', (ev) => {
+        truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
                 ev._receiverAddr === swapB &&
                 ev._bep2Addr === bep2Addr &&
-                Number(ev._index.toString()) === 1 &&
                 ev._secretHashLock === secretHashLock &&
                 Number(ev._timestamp.toString()) === timestamp &&
-                Number(ev._ETHCoin.toString()) === ETHCoin &&
+                Number(ev._outAmount.toString()) === ETHCoin &&
                 Number(ev._bep2Amount.toString()) === bep2Amount;
         });
 
         const gasUsed = initiateTx.receipt.gasUsed;
         const tx = await web3.eth.getTransaction(initiateTx.tx);
         const txFee = gasUsed * tx.gasPrice;
+        console.log("initiateTx gasUsed: ", initiateTx.receipt.gasUsed);
 
-        const index = await swapInstance.index.call();
-        assert.equal(index, 2, "swap index initial value should be 2");
-
-        initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
-        assert.equal(initializable, false);
+        hashLockable = (await swapInstance.hashLockable.call(secretHashLock)).valueOf();
+        assert.equal(hashLockable, false);
         var claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();
         assert.equal(claimable, true);
         var refundable = (await swapInstance.refundable.call(secretHashLock)).valueOf();
@@ -195,13 +168,10 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         let refundTx = await swapInstance.refund(secretHashLock, { from: accounts[6] });
 
         //SwapExpire n event should be emitted
-        truffleAssert.eventEmitted(refundTx, 'SwapExpire', (ev) => {
+        truffleAssert.eventEmitted(refundTx, 'Refunded', (ev) => {
             return ev._msgSender === accounts[6] && ev._swapSender === swapA && ev._secretHashLock === secretHashLock;
         });
-
-        // swap status should be EXPIRED 3
-        const swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
-        assert.equal(3, swap._status);
+        console.log("refundTx gasUsed: ", refundTx.receipt.gasUsed);
 
         var balanceOfSwapB = await web3.eth.getBalance(swapB);
         assert.equal(initialbalanceOfSwapB, balanceOfSwapB);
