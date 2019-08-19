@@ -100,16 +100,14 @@ contract ETHAtomicSwapper {
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
     /// @param _secretKey The secret of the atomic swap.
-    function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyBeforeExpireHeight(_secretHashLock) onlyOpenSwaps(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
+    function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyOpenSwaps(_secretHashLock) onlyBeforeExpireHeight(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
         // Complete the swap.
         swapStates[_secretHashLock] = States.COMPLETED;
 
-        Swap memory swap = swaps[_secretHashLock];
-        address payable receiverAddr = swap.receiverAddr;
-        uint256 outAmount = swap.outAmount;
-
         // Pay eth coin to receiver
-        receiverAddr.transfer(outAmount);
+        swaps[_secretHashLock].receiverAddr.transfer(swaps[_secretHashLock].outAmount);
+
+        address receiverAddr = swaps[_secretHashLock].receiverAddr;
 
         // delete closed swap
         delete swaps[_secretHashLock];
@@ -127,18 +125,16 @@ contract ETHAtomicSwapper {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
-        Swap memory swap = swaps[_secretHashLock];
-        address payable sender = swap.sender;
-        uint256 outAmount = swap.outAmount;
-
         // refund eth coin to swap creator
-        sender.transfer(outAmount);
+        swaps[_secretHashLock].sender.transfer(swaps[_secretHashLock].outAmount);
+
+        address swapSender = swaps[_secretHashLock].sender;
 
         // delete closed swap
         delete swaps[_secretHashLock];
 
         // Emit expire event
-        emit SwapExpire(msg.sender, sender, _secretHashLock);
+        emit SwapExpire(msg.sender, swapSender, _secretHashLock);
 
         return true;
     }

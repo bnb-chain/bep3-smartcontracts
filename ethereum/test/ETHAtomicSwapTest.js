@@ -79,6 +79,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const gasUsed = initiateTx.receipt.gasUsed;
         const tx = await web3.eth.getTransaction(initiateTx.tx);
         const txFee = gasUsed * tx.gasPrice;
+        console.log("initiateTx gasUsed: ", initiateTx.receipt.gasUsed);
 
         var balanceOfSwapA = await web3.eth.getBalance(swapA);
         assert.equal(balanceOfSwapA.toString(), new Big(initialbalanceOfSwapA).minus(ETHCoin).minus(txFee).toString());
@@ -91,6 +92,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         truffleAssert.eventEmitted(claimTx, 'SwapComplete', (ev) => {
             return ev._msgSender === accounts[6] && ev._receiverAddr === swapB && ev._secretHashLock === secretHashLock && ev._secretKey === secretKey;
         });
+        console.log("claimTx gasUsed: ", claimTx.receipt.gasUsed);
 
         balanceOfSwapB = await web3.eth.getBalance(swapB);
         assert.equal(balanceOfSwapB.toString(), new Big(initialbalanceOfSwapB).plus(ETHCoin).toString());
@@ -139,6 +141,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         const gasUsed = initiateTx.receipt.gasUsed;
         const tx = await web3.eth.getTransaction(initiateTx.tx);
         const txFee = gasUsed * tx.gasPrice;
+        console.log("initiateTx gasUsed: ", initiateTx.receipt.gasUsed);
 
         initializable = (await swapInstance.initializable.call(secretHashLock)).valueOf();
         assert.equal(initializable, false);
@@ -168,6 +171,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         truffleAssert.eventEmitted(refundTx, 'SwapExpire', (ev) => {
             return ev._msgSender === accounts[6] && ev._swapSender === swapA && ev._secretHashLock === secretHashLock;
         });
+        console.log("refundTx gasUsed: ", refundTx.receipt.gasUsed);
 
         var balanceOfSwapB = await web3.eth.getBalance(swapB);
         assert.equal(initialbalanceOfSwapB, balanceOfSwapB);

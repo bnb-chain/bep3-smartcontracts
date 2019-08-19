@@ -124,13 +124,10 @@ contract ERC20AtomicSwapper {
         // Complete the swap.
         swapStates[_secretHashLock] = States.COMPLETED;
 
-        Swap memory swap = swaps[_secretHashLock];
-        address receiverAddr = swap.receiverAddr;
-        uint256 outAmount = swap.outAmount;
-
         // Pay erc20 token to receiver
-        require(ERC20(ERC20ContractAddr).transfer(receiverAddr, outAmount), "Failed to transfer locked asset to receiver address");
+        require(ERC20(ERC20ContractAddr).transfer(swaps[_secretHashLock].receiverAddr, swaps[_secretHashLock].outAmount), "Failed to transfer locked asset to receiver");
 
+        address receiverAddr = swaps[_secretHashLock].receiverAddr;
         // delete closed swap
         delete swaps[_secretHashLock];
 
@@ -147,17 +144,14 @@ contract ERC20AtomicSwapper {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
-        Swap memory swap = swaps[_secretHashLock];
-        address sender = swap.sender;
-        uint256 outAmount = swap.outAmount;
-
         // refund erc20 token to swap creator
-        require(ERC20(ERC20ContractAddr).transfer(sender, outAmount), "Failed to transfer locked asset to swap creator");
+        require(ERC20(ERC20ContractAddr).transfer(swaps[_secretHashLock].sender, swaps[_secretHashLock].outAmount), "Failed to transfer locked asset back to swap creator");
 
+        address swapSender = swaps[_secretHashLock].sender;
         // delete closed swap
         delete swaps[_secretHashLock];
         // Emit expire event
-        emit SwapExpire(msg.sender, sender, _secretHashLock);
+        emit SwapExpire(msg.sender, swapSender, _secretHashLock);
 
         return true;
     }
