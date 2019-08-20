@@ -86,7 +86,7 @@ contract ETHAtomicSwapper {
             timestamp: _timestamp,
             sender: msg.sender,
             receiverAddr: _receiverAddr
-            });
+        });
 
         swaps[_secretHashLock] = swap;
         swapStates[_secretHashLock] = States.OPEN;
@@ -145,11 +145,11 @@ contract ETHAtomicSwapper {
     function queryOpenSwap(bytes32 _secretHashLock) external view returns(uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, address _sender, address _receiver) {
         Swap memory swap = swaps[_secretHashLock];
         return (
-        swap.timestamp,
-        swap.expireHeight,
-        swap.outAmount,
-        swap.sender,
-        swap.receiverAddr
+            swap.timestamp,
+            swap.expireHeight,
+            swap.outAmount,
+            swap.sender,
+            swap.receiverAddr
         );
     }
 
