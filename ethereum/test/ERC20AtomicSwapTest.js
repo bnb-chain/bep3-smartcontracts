@@ -119,6 +119,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
                 Number(ev._erc20Amount.toString()) === erc20Amount &&
                 Number(ev._bep2Amount.toString()) === bep2Amount;
         });
+        console.log("initiateTx gasUsed: {}", initiateTx.receipt.gasUsed);
 
         //Verify swap index
         const index = await swapInstance.index.call();
@@ -165,6 +166,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         truffleAssert.eventEmitted(claimTx, 'SwapComplete', (ev) => {
             return ev._msgSender === accounts[6] && ev._receiverAddr === swapB && ev._secretHashLock === secretHashLock && ev._secretKey === secretKey;
         });
+        console.log("claimTx gasUsed: {}", claimTx.receipt.gasUsed);
 
         swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
         // swap status should be COMPLETED 2
@@ -214,6 +216,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
                 Number(ev._erc20Amount.toString()) === erc20Amount &&
                 Number(ev._bep2Amount.toString()) === bep2Amount;
         });
+        console.log("initiateTx gasUsed: {}", initiateTx.receipt.gasUsed);
 
         const index = await swapInstance.index.call();
         assert.equal(index, 2, "swap index initial value should be 2");
@@ -247,6 +250,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         truffleAssert.eventEmitted(refundTx, 'SwapExpire', (ev) => {
             return ev._msgSender === accounts[6] && ev._swapSender === swapA && ev._secretHashLock === secretHashLock;
         });
+        console.log("refundTx gasUsed: {}", refundTx.receipt.gasUsed);
 
         // swap status should be EXPIRED 3
         const swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();

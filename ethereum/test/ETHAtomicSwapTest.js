@@ -60,6 +60,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
                 Number(ev._ETHCoin.toString()) === ETHCoin &&
                 Number(ev._bep2Amount.toString()) === bep2Amount;
         });
+        console.log("initiateTx gasUsed: {}", initiateTx.receipt.gasUsed);
 
         //Verify swap index
         const index = await swapInstance.index.call();
@@ -112,6 +113,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         truffleAssert.eventEmitted(claimTx, 'SwapComplete', (ev) => {
             return ev._msgSender === accounts[6] && ev._receiverAddr === swapB && ev._secretHashLock === secretHashLock && ev._secretKey === secretKey;
         });
+        console.log("claimTx gasUsed: {}", claimTx.receipt.gasUsed);
 
         swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
         // swap status should be COMPLETED 2
@@ -162,6 +164,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
                 Number(ev._ETHCoin.toString()) === ETHCoin &&
                 Number(ev._bep2Amount.toString()) === bep2Amount;
         });
+        console.log("initiateTx gasUsed: {}", initiateTx.receipt.gasUsed);
 
         const gasUsed = initiateTx.receipt.gasUsed;
         const tx = await web3.eth.getTransaction(initiateTx.tx);
@@ -198,6 +201,7 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         truffleAssert.eventEmitted(refundTx, 'SwapExpire', (ev) => {
             return ev._msgSender === accounts[6] && ev._swapSender === swapA && ev._secretHashLock === secretHashLock;
         });
+        console.log("refundTx gasUsed: {}", refundTx.receipt.gasUsed);
 
         // swap status should be EXPIRED 3
         const swap = (await swapInstance.querySwapByHashLock.call(secretHashLock)).valueOf();
