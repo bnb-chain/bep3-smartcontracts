@@ -18,9 +18,9 @@ contract ETHAtomicSwapper {
     }
 
     // Events
-    event SwapInit(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
-    event SwapExpire(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
-    event SwapComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
+    event HTLTInit(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
+    event HTLTExpire(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
+    event HTLTComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
 
     // Storage
     mapping (bytes32 => Swap) private swaps;
@@ -58,31 +58,31 @@ contract ETHAtomicSwapper {
         _;
     }
 
-    /// @notice Initiates an atomic swap.
+    /// @notice hashTimerLockedTransfer locks asset to contract address and create an atomic swap.
     ///
     /// @param _secretHashLock The hash of the secret key and timestamp
     /// @param _timestamp Counted by second
-    /// @param _timelock The number of blocks to wait before the asset can be returned to sender
+    /// @param _heightSpan The number of blocks to wait before the asset can be returned to sender
     /// @param _receiverAddr The ethereum address of the swap counterpart.
     /// @param _bep2Addr The receiver address on Binance Chain
     /// @param _bep2Amount BEP2 asset to swap in.
-    function initiate(
+    function hashTimerLockedTransfer(
         bytes32 _secretHashLock,
         uint64  _timestamp,
-        uint256 _timelock,
+        uint256 _heightSpan,
         address payable _receiverAddr,
         bytes20 _bep2Addr,
         uint256 _bep2Amount
     ) external onlyInvalidSwaps(_secretHashLock) payable returns (bool) {
         // Assume average block time interval is 10 second
-        // The timelock period should be more than 10 minutes and less than one week
-        require(_timelock >= 60 && _timelock <= 60480, "_timelock should be in [60, 60480]");
+        // The heightSpan period should be more than 10 minutes and less than one week
+        require(_heightSpan >= 60 && _heightSpan <= 60480, "_heightSpan should be in [60, 60480]");
         require(_receiverAddr != address(0), "_receiverAddr should not be zero");
         require(_timestamp >= now - 7200 && _timestamp <= now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
         // Store the details of the swap.
         Swap memory swap = Swap({
             outAmount: msg.value,
-            expireHeight: _timelock + block.number,
+            expireHeight: _heightSpan + block.number,
             timestamp: _timestamp,
             sender: msg.sender,
             receiverAddr: _receiverAddr
@@ -92,15 +92,15 @@ contract ETHAtomicSwapper {
         swapStates[_secretHashLock] = States.OPEN;
 
         // Emit initialization event
-        emit SwapInit(msg.sender, _receiverAddr, _secretHashLock, _timestamp, _bep2Addr, swap.expireHeight, msg.value, _bep2Amount);
+        emit HTLTInit(msg.sender, _receiverAddr, _secretHashLock, _timestamp, _bep2Addr, swap.expireHeight, msg.value, _bep2Amount);
         return true;
     }
 
-    /// @notice Claims an atomic swap.
+    /// @notice claimHashTimerLockedTransfer claim the previously locked asset.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
     /// @param _secretKey The secret of the atomic swap.
-    function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyOpenSwaps(_secretHashLock) onlyBeforeExpireHeight(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
+    function claimHashTimerLockedTransfer(bytes32 _secretHashLock, bytes32 _secretKey) external onlyOpenSwaps(_secretHashLock) onlyBeforeExpireHeight(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
         // Complete the swap.
         swapStates[_secretHashLock] = States.COMPLETED;
 
@@ -113,15 +113,15 @@ contract ETHAtomicSwapper {
         delete swaps[_secretHashLock];
 
         // Emit completion event
-        emit SwapComplete(msg.sender, receiverAddr, _secretHashLock, _secretKey);
+        emit HTLTComplete(msg.sender, receiverAddr, _secretHashLock, _secretKey);
 
         return true;
     }
 
-    /// @notice Refunds an atomic swap.
+    /// @notice refundHashTimerLockedTransfer refund the previously locked asset.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function refund(bytes32 _secretHashLock) external onlyOpenSwaps(_secretHashLock) onlyAfterExpireHeight(_secretHashLock) returns (bool) {
+    function refundHashTimerLockedTransfer(bytes32 _secretHashLock) external onlyOpenSwaps(_secretHashLock) onlyAfterExpireHeight(_secretHashLock) returns (bool) {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
@@ -134,7 +134,7 @@ contract ETHAtomicSwapper {
         delete swaps[_secretHashLock];
 
         // Emit expire event
-        emit SwapExpire(msg.sender, swapSender, _secretHashLock);
+        emit HTLTExpire(msg.sender, swapSender, _secretHashLock);
 
         return true;
     }
@@ -153,10 +153,10 @@ contract ETHAtomicSwapper {
         );
     }
 
-    /// @notice Checks whether a _secretHashLock is initializable or not.
+    /// @notice Checks whether a _secretHashLock can be used to create a hash lock or not.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function initializable(bytes32 _secretHashLock) external view returns (bool) {
+    function hashLockable(bytes32 _secretHashLock) external view returns (bool) {
         return (swapStates[_secretHashLock] == States.INVALID);
     }
 
