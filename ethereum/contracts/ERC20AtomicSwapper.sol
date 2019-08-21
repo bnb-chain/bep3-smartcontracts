@@ -27,9 +27,9 @@ contract ERC20AtomicSwapper {
     }
 
     // Events
-    event HTLTInit(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
-    event HTLTExpire(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
-    event HTLTComplete(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
+    event HTLT(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
+    event HTLTRefunded(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
+    event HTLTClaimed(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
 
     // Storage
     mapping (bytes32 => Swap) private swaps;
@@ -112,7 +112,7 @@ contract ERC20AtomicSwapper {
         swapStates[_secretHashLock] = States.OPEN;
 
         // Emit initialization event
-        emit HTLTInit(msg.sender, _receiverAddr, _secretHashLock, _timestamp, _bep2Addr, swap.expireHeight, _outAmount, _bep2Amount);
+        emit HTLT(msg.sender, _receiverAddr, _secretHashLock, _timestamp, _bep2Addr, swap.expireHeight, _outAmount, _bep2Amount);
         return true;
     }
 
@@ -132,7 +132,7 @@ contract ERC20AtomicSwapper {
         delete swaps[_secretHashLock];
 
         // Emit completion event
-        emit HTLTComplete(msg.sender, receiverAddr, _secretHashLock, _secretKey);
+        emit HTLTClaimed(msg.sender, receiverAddr, _secretHashLock, _secretKey);
 
         return true;
     }
@@ -151,7 +151,7 @@ contract ERC20AtomicSwapper {
         // delete closed swap
         delete swaps[_secretHashLock];
         // Emit expire event
-        emit HTLTExpire(msg.sender, swapSender, _secretHashLock);
+        emit HTLTRefunded(msg.sender, swapSender, _secretHashLock);
 
         return true;
     }
