@@ -104,7 +104,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(hashLockable, true);
 
         await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
-        let initiateTx = await swapInstance.hashTimerLockedTransfer(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, erc20Amount, bep2Amount, { from: swapA });
+        let initiateTx = await swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
@@ -137,9 +137,9 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(Number(balanceOfSwapB.toString()), 0);
 
         // Anyone can call claim and the token will be paid to swapB address
-        let claimTx = await swapInstance.claimHashTimerLockedTransfer(secretHashLock, secretKey, { from: accounts[6] });
+        let claimTx = await swapInstance.claim(secretHashLock, secretKey, { from: accounts[6] });
         //SwapComplete n event should be emitted
-        truffleAssert.eventEmitted(claimTx, 'HTLTClaimed', (ev) => {
+        truffleAssert.eventEmitted(claimTx, 'Claimed', (ev) => {
             return ev._msgSender === accounts[6] && ev._receiverAddr === swapB && ev._secretHashLock === secretHashLock && ev._secretKey === secretKey;
         });
         console.log("claimTx gasUsed: ", claimTx.receipt.gasUsed);
@@ -175,7 +175,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(hashLockable, true);
 
         await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
-        let initiateTx = await swapInstance.hashTimerLockedTransfer(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, erc20Amount, bep2Amount, { from: swapA });
+        let initiateTx = await swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, bep2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
@@ -211,10 +211,10 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(Number(balanceOfSwapB.toString()), 0);
 
         // Anyone can call refund and the token will always been refunded to swapA address
-        let refundTx = await swapInstance.refundHashTimerLockedTransfer(secretHashLock, { from: accounts[6] });
+        let refundTx = await swapInstance.refund(secretHashLock, { from: accounts[6] });
 
         //SwapExpire n event should be emitted
-        truffleAssert.eventEmitted(refundTx, 'HTLTRefunded', (ev) => {
+        truffleAssert.eventEmitted(refundTx, 'Refunded', (ev) => {
             return ev._msgSender === accounts[6] && ev._swapSender === swapA && ev._secretHashLock === secretHashLock;
         });
         console.log("refundTx gasUsed: ", refundTx.receipt.gasUsed);

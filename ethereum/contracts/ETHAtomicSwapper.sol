@@ -19,8 +19,8 @@ contract ETHAtomicSwapper {
 
     // Events
     event HTLT(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
-    event HTLTRefunded(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
-    event HTLTClaimed(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
+    event Refunded(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _secretHashLock);
+    event Claimed(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _secretHashLock, bytes32 _secretKey);
 
     // Storage
     mapping (bytes32 => Swap) private swaps;
@@ -58,7 +58,7 @@ contract ETHAtomicSwapper {
         _;
     }
 
-    /// @notice hashTimerLockedTransfer locks asset to contract address and create an atomic swap.
+    /// @notice HTLT locks asset to contract address and create an atomic swap.
     ///
     /// @param _secretHashLock The hash of the secret key and timestamp
     /// @param _timestamp Counted by second
@@ -66,7 +66,7 @@ contract ETHAtomicSwapper {
     /// @param _receiverAddr The ethereum address of the swap counterpart.
     /// @param _bep2Addr The receiver address on Binance Chain
     /// @param _bep2Amount BEP2 asset to swap in.
-    function hashTimerLockedTransfer(
+    function htlt(
         bytes32 _secretHashLock,
         uint64  _timestamp,
         uint256 _heightSpan,
@@ -96,11 +96,11 @@ contract ETHAtomicSwapper {
         return true;
     }
 
-    /// @notice claimHashTimerLockedTransfer claim the previously locked asset.
+    /// @notice claim claims the previously locked asset.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
     /// @param _secretKey The secret of the atomic swap.
-    function claimHashTimerLockedTransfer(bytes32 _secretHashLock, bytes32 _secretKey) external onlyOpenSwaps(_secretHashLock) onlyBeforeExpireHeight(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
+    function claim(bytes32 _secretHashLock, bytes32 _secretKey) external onlyOpenSwaps(_secretHashLock) onlyBeforeExpireHeight(_secretHashLock) onlyWithSecretKey(_secretHashLock, _secretKey) returns (bool) {
         // Complete the swap.
         swapStates[_secretHashLock] = States.COMPLETED;
 
@@ -113,15 +113,15 @@ contract ETHAtomicSwapper {
         delete swaps[_secretHashLock];
 
         // Emit completion event
-        emit HTLTClaimed(msg.sender, receiverAddr, _secretHashLock, _secretKey);
+        emit Claimed(msg.sender, receiverAddr, _secretHashLock, _secretKey);
 
         return true;
     }
 
-    /// @notice refundHashTimerLockedTransfer refund the previously locked asset.
+    /// @notice refund refunds the previously locked asset.
     ///
     /// @param _secretHashLock The hash of secretKey and timestamp
-    function refundHashTimerLockedTransfer(bytes32 _secretHashLock) external onlyOpenSwaps(_secretHashLock) onlyAfterExpireHeight(_secretHashLock) returns (bool) {
+    function refund(bytes32 _secretHashLock) external onlyOpenSwaps(_secretHashLock) onlyAfterExpireHeight(_secretHashLock) returns (bool) {
         // Expire the swap.
         swapStates[_secretHashLock] = States.EXPIRED;
 
@@ -134,7 +134,7 @@ contract ETHAtomicSwapper {
         delete swaps[_secretHashLock];
 
         // Emit expire event
-        emit HTLTRefunded(msg.sender, swapSender, _secretHashLock);
+        emit Refunded(msg.sender, swapSender, _secretHashLock);
 
         return true;
     }
