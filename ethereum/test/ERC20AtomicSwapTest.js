@@ -2,8 +2,7 @@ const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const crypto = require('crypto');
 const truffleAssert = require('truffle-assertions');
-const calculateSecretHashLock = require('./secretHashLock');
-const timeTraveler = require('ganache-time-traveler');
+const calculateSecretHashLock = require('./secretHashLock')
 
 
 contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
@@ -215,9 +214,9 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(refundable, false);
 
 
-        // Advance to expiration
+        // Just for producing new blocks
         for (var i = 0; i < timelock; i++) {
-            await timeTraveler.advanceBlock();
+            await bnbInstance.transfer(swapA, 10, { from: swapA });
         }
 
         claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();

@@ -2,7 +2,6 @@ const ETHAtomicSwapper = artifacts.require("ETHAtomicSwapper");
 const crypto = require('crypto');
 const truffleAssert = require('truffle-assertions');
 const Big = require('big.js');
-const timeTraveler = require('ganache-time-traveler');
 
 function calculateSecretHashLock (secretKey, timestamp) {
     const timestampHexStr = timestamp.toString(16);
@@ -179,9 +178,9 @@ contract('Verify ETHAtomicSwapper', (accounts) => {
         assert.equal(refundable, false);
 
 
-        // Advance to expiration
+        // Just for producing new blocks
         for (var i = 0; i < timelock; i++) {
-            await timeTraveler.advanceBlock();
+            await web3.eth.sendTransaction({ from: accounts[6], to: accounts[6], value: 10 });
         }
 
         claimable = (await swapInstance.claimable.call(secretHashLock)).valueOf();
