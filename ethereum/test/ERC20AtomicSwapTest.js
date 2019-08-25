@@ -2,7 +2,7 @@ const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const crypto = require('crypto');
 const truffleAssert = require('truffle-assertions');
-const calculateSecretHashLock = require('./secretHashLock')
+const calculateRandomNumberHash = require('./secretHashLock')
 
 
 contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {

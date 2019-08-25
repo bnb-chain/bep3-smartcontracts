@@ -65,7 +65,7 @@ contract('ERC20AtomicSwapper', (accounts) => {
             await this.bnbInstance.approve(this.swapInstance.address, outAmount, { from: swapA });
         })
         it('initiateTx and claim', async function() {
-            let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+            let initiateTx = await this.swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
             let claimTx = await this.swapInstance.claim(secretHashLock, secretKey, { from: operator });
             const actual = {
                 initiateTx: initiateTx.receipt.gasUsed,
@@ -74,7 +74,7 @@ contract('ERC20AtomicSwapper', (accounts) => {
             showRegressions(actual)
         })
         it('refund', async function() {
-            let initiateTx = await this.swapInstance.initiate(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+            let initiateTx = await this.swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
             // Just for producing new blocks
             for (var i = 0; i < timelock; i++) {
                 await this.bnbInstance.transfer(owner, 10, { from: owner });
