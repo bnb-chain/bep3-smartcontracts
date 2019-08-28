@@ -8,7 +8,7 @@ contract ETHAtomicSwapper {
         bytes32 randomNumberHash;
         uint64  timestamp;
         address payable sender;
-        address payable receiverAddr;
+        address payable recipientAddr;
     }
 
     enum States {
@@ -19,9 +19,9 @@ contract ETHAtomicSwapper {
     }
 
     // Events
-    event HTLT(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
+    event HTLT(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
     event Refunded(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _swapID, bytes32 _randomNumberHash);
-    event Claimed(address indexed _msgSender, address indexed _receiverAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, bytes32 _randomNumber);
+    event Claimed(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, bytes32 _randomNumber);
 
     // Storage
     mapping (bytes32 => Swap) private swaps;
@@ -62,24 +62,24 @@ contract ETHAtomicSwapper {
     /// @param _randomNumberHash The hash of the random number and timestamp
     /// @param _timestamp Counted by second
     /// @param _heightSpan The number of blocks to wait before the asset can be returned to sender
-    /// @param _receiverAddr The ethereum address of the swap counterpart.
-    /// @param _bep2Addr The receiver address on Binance Chain
+    /// @param _recipientAddr The ethereum address of the swap counterpart.
+    /// @param _bep2Addr The recipient address on Binance Chain
     /// @param _bep2Amount BEP2 asset to swap in.
     function htlt(
         bytes32 _randomNumberHash,
         uint64  _timestamp,
         uint256 _heightSpan,
-        address payable _receiverAddr,
+        address payable _recipientAddr,
         bytes20 _bep2Addr,
         uint256 _bep2Amount
     ) external payable returns (bool) {
         require(msg.value > 0, "msg.value must be more than 0");
-        bytes32 swapID = sha256(abi.encodePacked(_randomNumberHash, msg.sender));
+        bytes32 swapID = sha256(abi.encodePacked(_randomNumberHash, msg.sender, _recipientAddr));
         require(swapStates[swapID] == States.INVALID, "swap is opened previously");
         // Assume average block time interval is 10 second
         // The heightSpan period should be more than 10 minutes and less than one week
         require(_heightSpan >= 60 && _heightSpan <= 60480, "_heightSpan should be in [60, 60480]");
-        require(_receiverAddr != address(0), "_receiverAddr should not be zero");
+        require(_recipientAddr != address(0), "_recipientAddr should not be zero");
         require(_timestamp > now -7200 && _timestamp < now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
         // Store the details of the swap.
         Swap memory swap = Swap({
@@ -88,14 +88,14 @@ contract ETHAtomicSwapper {
             randomNumberHash: _randomNumberHash,
             timestamp: _timestamp,
             sender: msg.sender,
-            receiverAddr: _receiverAddr
+            recipientAddr: _recipientAddr
             });
 
         swaps[swapID] = swap;
         swapStates[swapID] = States.OPEN;
 
         // Emit initialization event
-        emit HTLT(msg.sender, _receiverAddr, swapID, _randomNumberHash, _timestamp, _bep2Addr, swap.expireHeight, msg.value, _bep2Amount);
+        emit HTLT(msg.sender, _recipientAddr, swapID, _randomNumberHash, _timestamp, _bep2Addr, swap.expireHeight, msg.value, _bep2Amount);
         return true;
     }
 
@@ -107,17 +107,17 @@ contract ETHAtomicSwapper {
         // Complete the swap.
         swapStates[_swapID] = States.COMPLETED;
 
-        address payable receiverAddr = swaps[_swapID].receiverAddr;
+        address payable recipientAddr = swaps[_swapID].recipientAddr;
         uint256 outAmount = swaps[_swapID].outAmount;
         bytes32 randomNumberHash = swaps[_swapID].randomNumberHash;
         // delete closed swap
         delete swaps[_swapID];
 
-        // Pay eth coin to receiver
-        receiverAddr.transfer(outAmount);
+        // Pay eth coin to recipient
+        recipientAddr.transfer(outAmount);
 
         // Emit completion event
-        emit Claimed(msg.sender, receiverAddr, _swapID, randomNumberHash, _randomNumber);
+        emit Claimed(msg.sender, recipientAddr, _swapID, randomNumberHash, _randomNumber);
 
         return true;
     }
@@ -147,7 +147,7 @@ contract ETHAtomicSwapper {
     /// @notice query an atomic swap by randomNumberHash
     ///
     /// @param _swapID The hash of randomNumberHash and swap creator
-    function queryOpenSwap(bytes32 _swapID) external view returns(bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, address _sender, address _receiver) {
+    function queryOpenSwap(bytes32 _swapID) external view returns(bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, address _sender, address _recipient) {
         Swap memory swap = swaps[_swapID];
         return (
             swap.randomNumberHash,
@@ -155,7 +155,7 @@ contract ETHAtomicSwapper {
             swap.expireHeight,
             swap.outAmount,
             swap.sender,
-            swap.receiverAddr
+            swap.recipientAddr
         );
     }
 
@@ -184,7 +184,7 @@ contract ETHAtomicSwapper {
     ///
     /// @param _randomNumberHash The hash of random number and timestamp.
     /// @param _swapCreator The creator of swap.
-    function calSwapID(bytes32 _randomNumberHash, address _swapCreator) public pure returns (bytes32) {
-        return sha256(abi.encodePacked(_randomNumberHash, _swapCreator));
+    function calSwapID(bytes32 _randomNumberHash, address _swapCreator, address _recipientAddr) public pure returns (bytes32) {
+        return sha256(abi.encodePacked(_randomNumberHash, _swapCreator, _recipientAddr));
     }
 }
