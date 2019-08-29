@@ -97,13 +97,13 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const bep2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
         const erc20Amount = 100000000;
         const bep2Amount = 100000000;
-        const swapID = calculateSwapID(randomNumberHash, swapA, "0x0000000000000000000000000000000000000000");
+        const swapID = calculateSwapID(randomNumberHash, swapA, "0xdd365624c0fcc851ab935e3d39b4e1f6599f4d09");
 
         var isSwapExist = (await swapInstance.isSwapExist.call(randomNumberHash)).valueOf();
-        assert.equal(isSwapExist, true);
+        assert.equal(isSwapExist, false);
 
         await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
-        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, "0x0000000000000000000000000000000000000000", bep2Addr, erc20Amount, bep2Amount, { from: swapA });
+        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, "0xdd365624c0fcc851ab935e3d39b4e1f6599f4d09", bep2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
@@ -127,7 +127,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(swapA, swap._sender);
 
         isSwapExist = (await swapInstance.isSwapExist.call(swapID)).valueOf();
-        assert.equal(isSwapExist, false);
+        assert.equal(isSwapExist, true);
         var claimable = (await swapInstance.claimable.call(swapID)).valueOf();
         assert.equal(claimable, true);
         var refundable = (await swapInstance.refundable.call(swapID)).valueOf();
@@ -170,13 +170,13 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const bep2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
         const erc20Amount = 100000000;
         const bep2Amount = 100000000;
-        const swapID = calculateSwapID(randomNumberHash, swapA, "0x0000000000000000000000000000000000000000");
+        const swapID = calculateSwapID(randomNumberHash, swapA, "0xdd365624c0fcc851ab935e3d39b4e1f6599f4d09");
 
         var isSwapExist = (await swapInstance.isSwapExist.call(swapID)).valueOf();
-        assert.equal(isSwapExist, true);
+        assert.equal(isSwapExist, false);
 
         await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
-        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, "0x0000000000000000000000000000000000000000", bep2Addr, erc20Amount, bep2Amount, { from: swapA });
+        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, "0xdd365624c0fcc851ab935e3d39b4e1f6599f4d09", bep2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
@@ -191,7 +191,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         console.log("initiateTx gasUsed: ", initiateTx.receipt.gasUsed);
 
         isSwapExist = (await swapInstance.isSwapExist.call(swapID)).valueOf();
-        assert.equal(isSwapExist, false);
+        assert.equal(isSwapExist, true);
         var claimable = (await swapInstance.claimable.call(swapID)).valueOf();
         assert.equal(claimable, true);
         var refundable = (await swapInstance.refundable.call(swapID)).valueOf();

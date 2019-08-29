@@ -87,14 +87,14 @@ contract ERC20AtomicSwapper {
         uint256 _outAmount,
         uint256 _bep2Amount
     ) external returns (bool) {
-        require(_outAmount > 0, "_outAmount must be more than 0");
-        bytes32 swapID = sha256(abi.encodePacked(_randomNumberHash, msg.sender, _bep2SenderAddr));
+        bytes32 swapID = calSwapID(_randomNumberHash, msg.sender, _bep2SenderAddr);
         require(swapStates[swapID] == States.INVALID, "swap is opened previously");
         // Assume average block time interval is 10 second
         // The heightSpan period should be more than 10 minutes and less than one week
         require(_heightSpan >= 60 && _heightSpan <= 60480, "_heightSpan should be in [60, 60480]");
         require(_recipientAddr != address(0), "_recipientAddr should not be zero");
-        require(_timestamp > now -7200 && _timestamp < now + 3600, "The timestamp should not be one hour ahead or two hour behind current time");
+        require(_outAmount > 0, "_outAmount must be more than 0");
+        require(_timestamp > now - 1800 && _timestamp < now + 900, "Timestamp can neither be 15 minutes ahead of the current time, nor 30 minutes later");
         // Store the details of the swap.
         Swap memory swap = Swap({
             outAmount: _outAmount,
@@ -180,7 +180,7 @@ contract ERC20AtomicSwapper {
     ///
     /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
     function isSwapExist(bytes32 _swapID) external view returns (bool) {
-        return (swapStates[_swapID] == States.INVALID);
+        return (swapStates[_swapID] != States.INVALID);
     }
 
     /// @notice Checks whether a swap is refundable or not.
@@ -203,6 +203,9 @@ contract ERC20AtomicSwapper {
     /// @param _swapSender The creator of swap.
     /// @param _bep2SenderAddr The sender of swap on Binance Chain.
     function calSwapID(bytes32 _randomNumberHash, address _swapSender, bytes20 _bep2SenderAddr) public pure returns (bytes32) {
+        if (_bep2SenderAddr == bytes20(0)) {
+            return sha256(abi.encodePacked(_randomNumberHash, _swapSender));
+        }
         return sha256(abi.encodePacked(_randomNumberHash, _swapSender, _bep2SenderAddr));
     }
 }
