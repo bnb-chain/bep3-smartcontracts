@@ -97,13 +97,13 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const bep2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
         const erc20Amount = 100000000;
         const bep2Amount = 100000000;
-        const swapID = calculateSwapID(randomNumberHash, swapA, swapB);
+        const swapID = calculateSwapID(randomNumberHash, swapA, "0x0000000000000000000000000000000000000000");
 
-        var swapExistence = (await swapInstance.swapExistence.call(randomNumberHash)).valueOf();
-        assert.equal(swapExistence, true);
+        var isSwapExist = (await swapInstance.isSwapExist.call(randomNumberHash)).valueOf();
+        assert.equal(isSwapExist, true);
 
         await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
-        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, bep2Addr, erc20Amount, bep2Amount, { from: swapA });
+        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, "0x0000000000000000000000000000000000000000", bep2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
@@ -126,8 +126,8 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         assert.equal(timestamp, swap._timestamp);
         assert.equal(swapA, swap._sender);
 
-        swapExistence = (await swapInstance.swapExistence.call(swapID)).valueOf();
-        assert.equal(swapExistence, false);
+        isSwapExist = (await swapInstance.isSwapExist.call(swapID)).valueOf();
+        assert.equal(isSwapExist, false);
         var claimable = (await swapInstance.claimable.call(swapID)).valueOf();
         assert.equal(claimable, true);
         var refundable = (await swapInstance.refundable.call(swapID)).valueOf();
@@ -170,13 +170,13 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const bep2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
         const erc20Amount = 100000000;
         const bep2Amount = 100000000;
-        const swapID = calculateSwapID(randomNumberHash, swapA, swapB);
+        const swapID = calculateSwapID(randomNumberHash, swapA, "0x0000000000000000000000000000000000000000");
 
-        var swapExistence = (await swapInstance.swapExistence.call(swapID)).valueOf();
-        assert.equal(swapExistence, true);
+        var isSwapExist = (await swapInstance.isSwapExist.call(swapID)).valueOf();
+        assert.equal(isSwapExist, true);
 
         await bnbInstance.approve(ERC20AtomicSwapper.address, erc20Amount, { from: swapA });
-        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, bep2Addr, erc20Amount, bep2Amount, { from: swapA });
+        let initiateTx = await swapInstance.htlt(randomNumberHash, timestamp, timelock, recipientAddr, "0x0000000000000000000000000000000000000000", bep2Addr, erc20Amount, bep2Amount, { from: swapA });
         //SwapInit event should be emitted
         truffleAssert.eventEmitted(initiateTx, 'HTLT', (ev) => {
             return ev._msgSender === swapA &&
@@ -190,8 +190,8 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         });
         console.log("initiateTx gasUsed: ", initiateTx.receipt.gasUsed);
 
-        swapExistence = (await swapInstance.swapExistence.call(swapID)).valueOf();
-        assert.equal(swapExistence, false);
+        isSwapExist = (await swapInstance.isSwapExist.call(swapID)).valueOf();
+        assert.equal(isSwapExist, false);
         var claimable = (await swapInstance.claimable.call(swapID)).valueOf();
         assert.equal(claimable, true);
         var refundable = (await swapInstance.refundable.call(swapID)).valueOf();
@@ -217,7 +217,7 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
 
         //SwapExpire n event should be emitted
         truffleAssert.eventEmitted(refundTx, 'Refunded', (ev) => {
-            return ev._msgSender === accounts[6] && ev._swapSender === swapA && ev._swapID === swapID && ev._randomNumberHash === randomNumberHash;
+            return ev._msgSender === accounts[6] && ev._recipientAddr === swapA && ev._swapID === swapID && ev._randomNumberHash === randomNumberHash;
         });
         console.log("refundTx gasUsed: ", refundTx.receipt.gasUsed);
 

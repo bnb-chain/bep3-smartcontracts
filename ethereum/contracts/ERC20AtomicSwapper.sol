@@ -29,7 +29,7 @@ contract ERC20AtomicSwapper {
 
     // Events
     event HTLT(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
-    event Refunded(address indexed _msgSender, address indexed _swapSender, bytes32 indexed _swapID, bytes32 _randomNumberHash);
+    event Refunded(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash);
     event Claimed(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, bytes32 _randomNumber);
 
     // Storage
@@ -73,7 +73,8 @@ contract ERC20AtomicSwapper {
     /// @param _timestamp Counted by second
     /// @param _heightSpan The number of blocks to wait before the asset can be returned to sender
     /// @param _recipientAddr The ethereum address of the swap counterpart.
-    /// @param _bep2Addr The recipient address on Binance Chain
+    /// @param _bep2SenderAddr the swap sender address on Binance Chain
+    /// @param _bep2RecipientAddr The recipient address on Binance Chain
     /// @param _outAmount ERC20 asset to swap out.
     /// @param _bep2Amount BEP2 asset to swap in.
     function htlt(
@@ -81,12 +82,13 @@ contract ERC20AtomicSwapper {
         uint64  _timestamp,
         uint256 _heightSpan,
         address _recipientAddr,
-        bytes20 _bep2Addr,
+        bytes20 _bep2SenderAddr,
+        bytes20 _bep2RecipientAddr,
         uint256 _outAmount,
         uint256 _bep2Amount
     ) external returns (bool) {
         require(_outAmount > 0, "_outAmount must be more than 0");
-        bytes32 swapID = sha256(abi.encodePacked(_randomNumberHash, msg.sender, _recipientAddr));
+        bytes32 swapID = sha256(abi.encodePacked(_randomNumberHash, msg.sender, _bep2SenderAddr));
         require(swapStates[swapID] == States.INVALID, "swap is opened previously");
         // Assume average block time interval is 10 second
         // The heightSpan period should be more than 10 minutes and less than one week
@@ -110,13 +112,13 @@ contract ERC20AtomicSwapper {
         require(ERC20(ERC20ContractAddr).transferFrom(msg.sender, address(this), _outAmount), "failed to transfer client asset to swap contract address");
 
         // Emit initialization event
-        emit HTLT(msg.sender, _recipientAddr, swapID, _randomNumberHash, _timestamp, _bep2Addr, swap.expireHeight, _outAmount, _bep2Amount);
+        emit HTLT(msg.sender, _recipientAddr, swapID, _randomNumberHash, _timestamp, _bep2RecipientAddr, swap.expireHeight, _outAmount, _bep2Amount);
         return true;
     }
 
     /// @notice claim claims the previously locked asset.
     ///
-    /// @param _swapID The hash of randomNumberHash and swap creator
+    /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
     /// @param _randomNumber The random number
     function claim(bytes32 _swapID, bytes32 _randomNumber) external onlyOpenSwaps(_swapID) onlyBeforeExpireHeight(_swapID) onlyWithRandomNumber(_swapID, _randomNumber) returns (bool) {
         // Complete the swap.
@@ -139,7 +141,7 @@ contract ERC20AtomicSwapper {
 
     /// @notice refund refunds the previously locked asset.
     ///
-    /// @param _swapID The hash of randomNumberHash and swap creator
+    /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
     function refund(bytes32 _swapID) external onlyOpenSwaps(_swapID) onlyAfterExpireHeight(_swapID) returns (bool) {
         // Expire the swap.
         swapStates[_swapID] = States.EXPIRED;
@@ -161,7 +163,7 @@ contract ERC20AtomicSwapper {
 
     /// @notice query an atomic swap by randomNumberHash
     ///
-    /// @param _swapID The hash of randomNumberHash and swap creator
+    /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
     function queryOpenSwap(bytes32 _swapID) external view returns(bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, address _sender, address _recipient) {
         Swap memory swap = swaps[_swapID];
         return (
@@ -176,21 +178,21 @@ contract ERC20AtomicSwapper {
 
     /// @notice Checks whether a swap with specified swapID exist
     ///
-    /// @param _swapID The hash of randomNumberHash and swap creator
-    function swapExistence(bytes32 _swapID) external view returns (bool) {
+    /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
+    function isSwapExist(bytes32 _swapID) external view returns (bool) {
         return (swapStates[_swapID] == States.INVALID);
     }
 
     /// @notice Checks whether a swap is refundable or not.
     ///
-    /// @param _swapID The hash of randomNumberHash and swap creator
+    /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
     function refundable(bytes32 _swapID) external view returns (bool) {
         return (block.number >= swaps[_swapID].expireHeight && swapStates[_swapID] == States.OPEN);
     }
 
     /// @notice Checks whether a swap is claimable or not.
     ///
-    /// @param _swapID The hash of randomNumberHash and swap creator
+    /// @param _swapID The hash of randomNumberHash, swap creator and swap recipient
     function claimable(bytes32 _swapID) external view returns (bool) {
         return (block.number < swaps[_swapID].expireHeight && swapStates[_swapID] == States.OPEN);
     }
@@ -198,8 +200,9 @@ contract ERC20AtomicSwapper {
     /// @notice Calculate the swapID from randomNumberHash and swapCreator
     ///
     /// @param _randomNumberHash The hash of random number and timestamp.
-    /// @param _swapCreator The creator of swap.
-    function calSwapID(bytes32 _randomNumberHash, address _swapCreator, address _recipientAddr) public pure returns (bytes32) {
-        return sha256(abi.encodePacked(_randomNumberHash, _swapCreator, _recipientAddr));
+    /// @param _swapSender The creator of swap.
+    /// @param _bep2SenderAddr The sender of swap on Binance Chain.
+    function calSwapID(bytes32 _randomNumberHash, address _swapSender, bytes20 _bep2SenderAddr) public pure returns (bytes32) {
+        return sha256(abi.encodePacked(_randomNumberHash, _swapSender, _bep2SenderAddr));
     }
 }
