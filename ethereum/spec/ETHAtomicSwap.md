@@ -8,99 +8,53 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
 
 ### Transaction interfaces
 
-1. function **initiate**(bytes32 _secretHashLock, uint64 _timestamp, uint256 _timelock, address _receiverAddr, bytes20 _bep2Addr, uint256 _bep2Amount) **payable**
-    1. `_timestamp` is supposed to be the time of sending transaction, counted by second, it should not be one hour ahead or two hour behind current time.
-    2. `_secretHashLock` is the hash of `_secretKey` and `_timestamp`
-    3. `_timelock` is the number of blocks to wait before the asset can be refunded
-    4. `_receiverAddr` is the Ethereum address of swap counter party
-    5. `_bep2Addr` is the receiver address on Binance Chain. 
+1. function **htlt**(bytes32 _randomNumberHash, uint64  _timestamp, uint256 _heightSpan, address _recipientAddr, bytes20 _bep2SenderAddr, bytes20 _bep2RecipientAddr, uint256 _outAmount, uint256 _bep2Amount)
+    1. `_timestamp` is supposed to be the time of sending transaction, counted by second. If this htlt is response to another htlt on other chain, then their timestamp should be identical.
+    2. `_randomNumberHash` sha256(_randomNumber, _timestamp)
+    3. `_heightSpan` is the number of blocks to wait before the asset can be refunded
+    4. `_recipientAddr` is the Ethereum address of swap counter party
+    5. `_bep2SenderAddr` is the swap sender address on Binance Chain
+    5. `_bep2RecipientAddr` is the receiver address on Binance Chain. 
+    6. `_outAmount` is the recipient address on Binance Chain.
     7. `_bep2Amount` is the expected received BEP2 token on Binance Chain.
-     
-    This interface will transfer ETH coin to the swap contract address.
-    1. Check if the `_secretHashLock` has been used already. If true, just abort execution.
-    2. Create a swap record and save in a mapper.
-        ```
-            struct Swap {
-                uint256 ETHCoin;
-                uint256 bep2Amount;
-                uint256 expireHeight;
-                bytes32 secretKey;
-                uint64 timestamp;
-                address sender;
-                address receiverAddr;
-                bytes20 bep2Addr;
-            }
-        ```
-    3. `ETHCoin` = `msg.value`
-    4. `expireHeight` = `block.number + _timelock`.
-    5. `sender` = `msg.sender`.
-    6. Mark `Swap` status to `OPEN`.
-    7. Increase swap `index`.
-    8. Emit **SwapInit** event.
+
+2. function **refund**(bytes32 _swapID)
     
-2. function **refund**(bytes32 _secretHashLock)
+    `_swapID` sha256(swap.randomNumberHash, swap.From, swap.SenderOtherChain)
     
-    `_secretHashLock` is the hash of `_secretKey` and `_timestamp`
-    
-    This function will try to refund locked ETH coin to the swap creator. Anyone can call this function, but the locked ETH coin will only be paid to `Swap.sender`.
-    1. Get the `Swap` record by `_secretHashLock`
-    2. Check if status of `Swap` is `OPEN`, if false, abort execution.
-    3. Compare if the current block height is greater than the `expireHeight`. if false, abort execution.
-    4. Transfer `Swap.ETHCoin` ETH coin from swap contract address to `Swap.sender`
-    5. Mark `Swap` status to `EXPIRED`.
-    6. Emit **SwapExpire** event
-    
-3. function **claim**(bytes32 _secretHashLock, bytes32 _secretKey)
-    1. `_secretHashLock` is the hash of `_secretKey` and `_timestamp`
-    2. `_secretKey` is a random 32-length byte array. Client should keep it private strictly.
-    
-    This function will try to claim lock ETH coin to the `Swap.receiverAddr`. Anyone can call this function, but the locked ETH coin will only be paid to `Swap.receiverAddr`.
-    1. Get the `Swap` record by `_secretHashLock`.
-    2. Check if status of `Swap` is `OPEN`, if false, abort execution.
-    3. Check if the current block height is less then `Swap.expireHeight`, if false, abort execution.
-    4. Verify if `_secretHashLock` equals to the hash of `_secretKey` and `Swap.timestamp`
-    5. Save `_secretKey` to `Swap.secretKey` and update `Swap`. Then anyone can get the `secretKey` later.
-    6. Transfer `Swap.ETHCoin` ETH coin from swap contract address to `Swap.receiverAddr`
-    7. Mark `Swap` status to `COMPLETED`.
-    8. Emit **SwapComplete** event
+3. function **claim**(bytes32 _swapID, bytes32 _randomNumber)
+    1. `_swapID` sha256(swap.randomNumberHash, swap.From, swap.SenderOtherChain)
+    2. `_randomNumber` is a random 32-length byte array. Client should keep it private strictly.
 
 ### Query interfaces
 
-1. function **initializable**(bytes32 _secretHashLock) returns (bool)
+1. function **isSwapExist**(bytes32 _swapID) returns (bool)
     
-    Judge if the `_secretHashLock` has been used already. If true, then the `_secretHashLock` can't be used for creating another swap.
+    Judge if the `_swapID` has been used already.
     
-2. function **refundable**(bytes32 _secretHashLock) returns (bool)
+2. function **refundable**(bytes32 _swapID) returns (bool)
 
     Judge if the asset locked by the specified swap can be refunded or not. If true, anyone can call refund function to refund locked asset to the swap creator.
     
-3. function **claimable**(bytes32 _secretHashLock) returns (bool)
+3. function **claimable**(bytes32 _swapID) returns (bool)
 
     Judge if the asset locked by the specified swap can be claimed or not. If true, anyone can call claim function to transfer locked asset to the `_receiverAddr` address.
-
-4. function **querySwapByHashLock**(bytes32 _secretHashLock) returns (uint64 _timestamp,  uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, uint8 _status)
-
-    Query swap record by secret hash lock.
     
-5. function **querySwapByIndex**(uin256 _index) returns (bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount, address _sender, address _receiver, bytes20 _bep2Addr, bytes32 _secretKey, uint8 _status)
+5. function **queryOpenSwap**(uin256 _swapID) returns (bytes32 _randomNumberHash, uint64 _timestamp, uint256 _expireHeight, uint256 _outAmount, address _sender, address _recipient)
 
-    Query swap record by swap index. The index is a sequence number of a swap. For instance, the index of the first swap is 0.
-
-6. function **index**() returns (uint256 _index)
-
-    Get the next swap index. If the swap contract is new deployed, **index** returns 0. If there are already 100 swaps, then **index** returns 100.
+    Query an opened swap record by swapID.
 
 ### Event
 
-1. event **SwapInit**(address indexed _msgSender, address indexed _receiverAddr, bytes20 _bep2Addr, uint256 _index, bytes32 _secretHashLock, uint64 _timestamp, uint256 _expireHeight, uint256 _ETHCoin, uint256 _bep2Amount);
+1. event **HTLT**(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, uint64 _timestamp, bytes20 _bep2Addr, uint256 _expireHeight, uint256 _outAmount, uint256 _bep2Amount);
 
-    Once a swap is created, then event **SwapInit** will be emitted. Client can monitor this event to get all new created swaps.
+    Once a swap is created, then this event will be emitted. Client can monitor this event to get all new created swaps.
 
-2. event **SwapExpire**(address indexed _msgSender, address indexed _swapSender, bytes32 _secretHashLock);
+2. event **Refunded**(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash);
 
-    One a swap expire height is passed and someone call **refund** function, then event **SwapExpire** will be emitted.
+    One a swap expire height is passed and someone call **refund** function, then this event will be emitted.
     
-3. event **SwapComplete**(address indexed _msgSender, address indexed _receiverAddr, bytes32 _secretHashLock, bytes32 _secretKey);
+3. event **Claimed**(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, bytes32 _randomNumber);
 
-    If someone call **claim** to a swap with correct secretKey and the swap expire height is not passed, then event **SwapComplete** will be emitted. Client can monitor this event to get the secretKey.
+    If someone call **claim** to a swap with correct secretKey and the swap expire height is not passed, then this event will be emitted. Client can monitor this event to get the secretKey.
 
