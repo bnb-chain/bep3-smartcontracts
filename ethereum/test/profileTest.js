@@ -2,7 +2,7 @@ const fs = require('fs')
 const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const truffleAssert = require('truffle-assertions');
-const calculateSecretHashLock = require('./secretHashLock')
+const { calculateRandomNumberHash } = require('./secretHashLock')
 
 let profile;
 try {
@@ -49,7 +49,7 @@ contract('ERC20AtomicSwapper', (accounts) => {
     // Constant swap parameters
     const timestamp = 1565312187;
     const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
-    const secretHashLock = calculateSecretHashLock(secretKey, timestamp);
+    const secretHashLock = calculateRandomNumberHash(secretKey, timestamp);
     const timelock = 257;
     const receiverAddr = swapB;
     const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
