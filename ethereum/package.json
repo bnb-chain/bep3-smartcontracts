@@ -11,7 +11,7 @@
   "license": "",
   "scripts": {
     "compile": "truffle compile",
-    "ganache": "ganache-cli -p 8545 --networkId 5555 --time '2019-08-09T00:00:00+00:00'",
+    "ganache": "ganache-cli -p 8545 --networkId 5555",
     "migration": "truffle migration --network test",
     "test": "truffle test --network test"
   },

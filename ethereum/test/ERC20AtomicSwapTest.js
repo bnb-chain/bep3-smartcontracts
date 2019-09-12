@@ -63,15 +63,6 @@ contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
         const balanceAcc2_1 = (await bnbInstance.balanceOf.call(acc2)).valueOf();
         assert.equal(Number(balanceAcc2_1.toString()), amount, "acc2 balance should be " + amount);
     });
-    it('Test random number hash lock calculation', async () => {
-        const swapInstance = await ERC20AtomicSwapper.deployed();
-
-        const timestamp = 1565312187;
-        const randomNumber = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
-        const randomNumberHash = (await swapInstance.calRandomNumberHash.call(randomNumber, timestamp));
-
-        assert.equal(randomNumberHash, calculateRandomNumberHash(randomNumber, timestamp), "the randomNumberHash should equal to hash result of randomNumber and timestamp");
-    });
     it('Test swap initiate, claim', async () => {
         const swapInstance = await ERC20AtomicSwapper.deployed();
         const bnbInstance = await BNBToken.deployed();

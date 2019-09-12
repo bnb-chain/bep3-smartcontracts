@@ -2,7 +2,7 @@ const fs = require('fs')
 const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const truffleAssert = require('truffle-assertions');
-const { calculateRandomNumberHash } = require('./secretHashLock')
+const { calculateRandomNumberHash, calculateSwapID } = require('./secretHashLock')
 
 let profile;
 try {
@@ -46,15 +46,21 @@ function hasNoZero(address) {
 
 contract('ERC20AtomicSwapper', (accounts) => {
     const [_, owner, operator, swapA, swapB] = accounts.filter(hasNoZero)
+    let timestamp = Math.floor(Date.now() / 1000);
+    // last byte non-zero
+    if (timestamp & 0xff == 0) {
+        timestamp += 1;
+    }
     // Constant swap parameters
-    const timestamp = 1565312187;
     const secretKey = "0xaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccddaabbccdd";
     const secretHashLock = calculateRandomNumberHash(secretKey, timestamp);
-    const timelock = 257;
+    const heightSpan = 257;
     const receiverAddr = swapB;
+    const BEP2SenderAddr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ed";
     const BEP2Addr = "0xc9a2c4868f0f96faaa739b59934dc9cb304112ec";
     const outAmount = 100000000;
     const inAmount = 100000000;
+    const swapID = calculateSwapID(secretHashLock, swapA, BEP2SenderAddr)
 
     describe('--Gas Profiling--', function() {
         beforeEach(async function() {
@@ -65,8 +71,8 @@ contract('ERC20AtomicSwapper', (accounts) => {
             await this.bnbInstance.approve(this.swapInstance.address, outAmount, { from: swapA });
         })
         it('initiateTx and claim', async function() {
-            let initiateTx = await this.swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
-            let claimTx = await this.swapInstance.claim(secretHashLock, secretKey, { from: operator });
+            let initiateTx = await this.swapInstance.htlt(secretHashLock, timestamp, heightSpan, receiverAddr, BEP2SenderAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+            let claimTx = await this.swapInstance.claim(swapID, secretKey, { from: operator });
             const actual = {
                 initiateTx: initiateTx.receipt.gasUsed,
                 claimTx: claimTx.receipt.gasUsed,
@@ -74,12 +80,12 @@ contract('ERC20AtomicSwapper', (accounts) => {
             showRegressions(actual)
         })
         it('refund', async function() {
-            let initiateTx = await this.swapInstance.htlt(secretHashLock, timestamp, timelock, receiverAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
+            let initiateTx = await this.swapInstance.htlt(secretHashLock, timestamp, heightSpan, receiverAddr, BEP2SenderAddr, BEP2Addr, outAmount, inAmount, { from: swapA });
             // Just for producing new blocks
-            for (var i = 0; i < timelock; i++) {
+            for (var i = 0; i < heightSpan; i++) {
                 await this.bnbInstance.transfer(owner, 10, { from: owner });
             }
-            let refundTx = await this.swapInstance.refund(secretHashLock, { from: operator });
+            let refundTx = await this.swapInstance.refund(swapID, { from: operator });
             const actual = {
                 refundTx: initiateTx.receipt.gasUsed,
             }
