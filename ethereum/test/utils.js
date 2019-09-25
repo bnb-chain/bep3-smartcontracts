@@ -14,6 +14,7 @@ function calculateRandomNumberHash(randomNumber, timestamp) {
     return "0x" + hash.digest('hex');
 }
 
+
 function calculateSwapID(randomNumberHash, sender, recipient) {
     const newBuffer = Buffer.concat([Buffer.from(randomNumberHash.substring(2, 66), "hex"), Buffer.from(sender.substring(2, 42), "hex"), Buffer.from(recipient.substring(2, 42), "hex")]);
     const hash = crypto.createHash('sha256');
@@ -21,7 +22,19 @@ function calculateSwapID(randomNumberHash, sender, recipient) {
     return "0x" + hash.digest('hex');
 }
 
+
+function hasNoZero(address) {
+    for (let i = 2; i < address.length; i += 2) {
+        if (address.substr(i, 2) == '00') {
+            return false
+        }
+    }
+    return true
+}
+
+
 module.exports = {
     calculateRandomNumberHash,
     calculateSwapID,
+    hasNoZero,
 }

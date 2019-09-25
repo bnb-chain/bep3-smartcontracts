@@ -2,7 +2,7 @@ const ETHAtomicSwapper = artifacts.require("ETHAtomicSwapper");
 const crypto = require('crypto');
 const truffleAssert = require('truffle-assertions');
 const Big = require('big.js');
-const { calculateRandomNumberHash, calculateSwapID } = require('./secretHashLock.js')
+const { calculateRandomNumberHash, calculateSwapID } = require('./utils.js')
 
 
 contract('Verify ETHAtomicSwapper', (accounts) => {

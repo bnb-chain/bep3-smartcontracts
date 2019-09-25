@@ -2,7 +2,7 @@ const fs = require('fs')
 const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const truffleAssert = require('truffle-assertions');
-const { calculateRandomNumberHash, calculateSwapID } = require('./secretHashLock')
+const { calculateRandomNumberHash, calculateSwapID, hasNoZero } = require('./utils')
 
 let profile;
 try {
@@ -33,15 +33,6 @@ function showRegressions(results) {
     }
 }
 
-
-function hasNoZero(address) {
-    for (let i = 2; i < address.length; i += 2) {
-        if (address.substr(i, 2) == '00') {
-            return false
-        }
-    }
-    return true
-}
 
 
 contract('ERC20AtomicSwapper', (accounts) => {
