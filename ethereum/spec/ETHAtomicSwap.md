@@ -57,4 +57,3 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
 3. event **Claimed**(address indexed _msgSender, address indexed _recipientAddr, bytes32 indexed _swapID, bytes32 _randomNumberHash, bytes32 _randomNumber);
 
     If someone call **claim** to a swap with correct secretKey and the swap expire height is not passed, then this event will be emitted. Client can monitor this event to get the secretKey.
-
