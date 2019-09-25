@@ -35,7 +35,7 @@ function showRegressions(results) {
 
 
 function hasNoZero(address) {
-    for (let i = 2; i < address.length; i++) {
+    for (let i = 2; i < address.length; i += 2) {
         if (address.substr(i, 2) == '00') {
             return false
         }
