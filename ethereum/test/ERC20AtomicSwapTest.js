@@ -2,27 +2,8 @@ const BNBToken = artifacts.require("BNBToken");
 const ERC20AtomicSwapper = artifacts.require("ERC20AtomicSwapper");
 const crypto = require('crypto');
 const truffleAssert = require('truffle-assertions');
+const { calculateRandomNumberHash, calculateSwapID } = require('./utils')
 
-function calculateRandomNumberHash (randomNumber, timestamp) {
-    const timestampHexStr = timestamp.toString(16);
-    var timestampHexStrFormat = timestampHexStr;
-    // timestampHexStrFormat should be the hex string of a 32-length byte array. Fill 0 if the timestampHexStr length is less than 64
-    for (var i = 0; i < 16 - timestampHexStr.length; i++) {
-        timestampHexStrFormat = '0' + timestampHexStrFormat;
-    }
-    const timestampBytes = Buffer.from(timestampHexStrFormat, "hex");
-    const newBuffer = Buffer.concat([Buffer.from(randomNumber.substring(2, 66), "hex"), timestampBytes]);
-    const hash = crypto.createHash('sha256');
-    hash.update(newBuffer);
-    return "0x" + hash.digest('hex');
-}
-
-function calculateSwapID(randomNumberHash, sender, recipient) {
-    const newBuffer = Buffer.concat([Buffer.from(randomNumberHash.substring(2, 66), "hex"), Buffer.from(sender.substring(2, 42), "hex"), Buffer.from(recipient.substring(2, 42), "hex")]);
-    const hash = crypto.createHash('sha256');
-    hash.update(newBuffer);
-    return "0x" + hash.digest('hex');
-}
 
 contract('Verify BNBToken and ERC20AtomicSwapper', (accounts) => {
     it('Check init state for BNBToken and ERC20AtomicSwapper', async () => {
