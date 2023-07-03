@@ -2,7 +2,7 @@
 
 ## Summary
 
-This contract implement secret hash lock mechanism which enables atomic swap between ETH coin and BEP2 tokens on Binance Chain.
+This contract implement secret hash lock mechanism which enables atomic swap between ETH coin and BEP2 tokens on BNB Beacon Chain.
 
 ## Smart Contract Interface
 
@@ -13,10 +13,10 @@ This contract implement secret hash lock mechanism which enables atomic swap bet
     2. `_randomNumberHash` sha256(_randomNumber, _timestamp)
     3. `_heightSpan` is the number of blocks to wait before the asset can be refunded
     4. `_recipientAddr` is the Ethereum address of swap counter party
-    5. `_bep2SenderAddr` is the swap sender address on Binance Chain
-    5. `_bep2RecipientAddr` is the receiver address on Binance Chain. 
-    6. `_outAmount` is the recipient address on Binance Chain.
-    7. `_bep2Amount` is the expected received BEP2 token on Binance Chain.
+    5. `_bep2SenderAddr` is the swap sender address on BNB Beacon Chain
+    5. `_bep2RecipientAddr` is the receiver address on BNB Beacon Chain. 
+    6. `_outAmount` is the recipient address on BNB Beacon Chain.
+    7. `_bep2Amount` is the expected received BEP2 token on BNB Beacon Chain.
 
 2. function **refund**(bytes32 _swapID)
     
