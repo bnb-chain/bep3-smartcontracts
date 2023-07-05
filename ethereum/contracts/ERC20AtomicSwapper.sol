@@ -73,8 +73,8 @@ contract ERC20AtomicSwapper {
     /// @param _timestamp Counted by second
     /// @param _heightSpan The number of blocks to wait before the asset can be returned to sender
     /// @param _recipientAddr The ethereum address of the swap counterpart.
-    /// @param _bep2SenderAddr the swap sender address on Binance Chain
-    /// @param _bep2RecipientAddr The recipient address on Binance Chain
+    /// @param _bep2SenderAddr the swap sender address on BNB Beacon Chain
+    /// @param _bep2RecipientAddr The recipient address on BNB Beacon Chain
     /// @param _outAmount ERC20 asset to swap out.
     /// @param _bep2Amount BEP2 asset to swap in.
     function htlt(
@@ -201,7 +201,7 @@ contract ERC20AtomicSwapper {
     ///
     /// @param _randomNumberHash The hash of random number and timestamp.
     /// @param _swapSender The creator of swap.
-    /// @param _bep2SenderAddr The sender of swap on Binance Chain.
+    /// @param _bep2SenderAddr The sender of swap on BNB Beacon Chain.
     function calSwapID(bytes32 _randomNumberHash, address _swapSender, bytes20 _bep2SenderAddr) public pure returns (bytes32) {
         if (_bep2SenderAddr == bytes20(0)) {
             return sha256(abi.encodePacked(_randomNumberHash, _swapSender));
